@@ -25,7 +25,7 @@ app.use(cookieParser());
 // CORS configuration
 app.use(
   cors({
-    origin: ["http://localhost:3000", "https://edugrantors.vercel.app"],
+    origin: ["http://localhost:3000", "https://edugrantors.vercel.app","https://edugrantors-frontend.vercel.app","https://edugrantors.in"],
     credentials: true,
   })
 );
