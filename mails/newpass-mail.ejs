@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EDU GRANTORS Activation Mail</title>
+    <link href="/tailwind.css" rel="stylesheet">
+</head>
+
+<body class="bg-gray-100 py-10">
+    <div class="max-w-lg mx-auto bg-white shadow-lg rounded-lg overflow-hidden">
+        <!-- Header -->
+        <div class="bg-blue-500 text-white text-center py-4">
+      <img src="https://res.cloudinary.com/dyn63itl8/image/upload/v1737895337/zfch48efsemeekstemcb.png" alt="Edu Grantors Logo" class="mb-4" />
+            <h1 class="text-xl font-bold">Welcome to EDU GRANTORS</h1>
+        </div>
+        <!-- Body -->
+        <div class="p-6">
+            <!-- views/verify-mail.ejs -->
+            <h1>Hello, <%= user.name %>!</h1>
+            <p>Your new password is.</p>
+            <p><%=newPassword%></p>
+
+
+        </div>
+        <!-- Footer -->
+        <div class="bg-gray-100 text-center p-4">
+            <p class="text-sm">If you have any questions, please contact us at
+                <a href="mailto:edugrantors@gmail.com" class="text-blue-500 hover:underline">edugrantors@gmail.com</a>.
+            </p>
+        </div>
+    </div>
+</body>
+
+</html>

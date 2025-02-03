@@ -1,0 +1,39 @@
+# Node.js
+node_modules/
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Build output
+/dist
+/build
+
+# Dependency directories
+/.pnp
+.pnp.js
+
+# TypeScript
+*.tsbuildinfo
+
+# IDE and editor folders
+.idea/
+.vscode/
+
+# Testing coverage
+coverage/
+
+# Miscellaneous
+*.tgz

@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Order Confirmation</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-100 font-sans leading-normal tracking-normal">
+  <div class="bg-gradient-to-r from-purple-500 to-blue-600 py-6">
+    <div class="max-w-3xl mx-auto">
+      <div class="text-center">
+        <img src="https://res.cloudinary.com/dyn63itl8/image/upload/v1737895337/zfch48efsemeekstemcb.png"
+          alt="Edu Grantors Logo" class="mb-4" />
+
+        <h1 class="text-4xl font-bold text-white">Thank You for Your Order!</h1>
+        <p class="text-lg text-gray-200 mt-2">We're thrilled to have you on board, and your course awaits!</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="max-w-3xl mx-auto bg-white shadow-lg mt-6 rounded-lg">
+    <div class="px-6 py-8">
+      <h2 class="text-2xl font-semibold text-gray-800">Order Confirmation</h2>
+      <p class="mt-4 text-gray-600">Hello,</p>
+      <p class="mt-2 text-gray-600">Thank you for enrolling in <span class="font-bold text-gray-800">
+          <%= order.name %>
+        </span>. Below are the details of your order:</p>
+      <div class="mt-6 pt-4">
+        <table class="w-full bg-white border-collapse rounded-lg shadow-md">
+          <thead>
+            <tr>
+              <th class="px-4 py-2 bg-gray-100 text-left text-gray-700 text-sm font-semibold"
+                style="border-bottom: 1px solid #e5e7eb; border-top: 1px solid #e5e7eb;">Order Details</th>
+              <th class="px-4 py-2 bg-gray-100"
+                style="border-bottom: 1px solid #e5e7eb; border-top: 1px solid #e5e7eb;"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="px-4 py-2 text-gray-600" style="border-bottom: 1px solid #e5e7eb;"><strong>Course
+                  Name:</strong></td>
+              <td class="px-4 py-2 text-gray-600" style="border-bottom: 1px solid #e5e7eb;">
+                <%= order.name %>
+              </td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-gray-600" style="border-bottom: 1px solid #e5e7eb;"><strong>Order ID:</strong>
+              </td>
+              <td class="px-4 py-2 text-gray-600" style="border-bottom: 1px solid #e5e7eb;">
+                <%= order._id %>
+              </td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-gray-600" style="border-bottom: 1px solid #e5e7eb;"><strong>Price:</strong></td>
+              <td class="px-4 py-2 text-gray-600" style="border-bottom: 1px solid #e5e7eb;">₹<%= order.price %>
+              </td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-gray-600" style="border-bottom: 1px solid #e5e7eb;"><strong>Order Date:</strong>
+              </td>
+              <td class="px-4 py-2 text-gray-600" style="border-bottom: 1px solid #e5e7eb;">
+                <%= order.date %>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="mt-6 bg-gradient-to-r from-green-400 to-blue-500 p-4 rounded-lg text-white text-center">
+        <h3 class="text-xl font-semibold">Get Ready to Start!</h3>
+        <p class="mt-2">You can access your course in your dashboard and start learning right away!</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="max-w-3xl mx-auto text-center py-8">
+    <p class="text-gray-500">If you have any questions, feel free to contact us at <a
+        href="mailto:edugrantors@gmail.com" class="text-blue-600">edugrantors@gmail.com</a>.</p>
+    <p class="text-gray-500 mt-2">Thank you for choosing our platform!</p>
+  </div>
+
+  <footer class="bg-gray-800 py-4">
+    <div class="max-w-3xl mx-auto text-center">
+      <p class="text-gray-400 text-sm">© 2024 YourCompany. All rights reserved.</p>
+    </div>
+  </footer>
+</body>
+
+</html>

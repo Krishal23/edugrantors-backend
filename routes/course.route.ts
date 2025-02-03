@@ -1,0 +1,173 @@
+import express from "express";
+import {
+  addAnswer,
+  addCoupons,
+  addQuestion,
+  addReplyToReview,
+  addReview,
+  attemptQuiz2,
+  createQuiz,
+  deleteCourse,
+  deleteQuestion,
+  editCourse,
+  getAdminAllCourse,
+  getAllCourses,
+  getAllCoursesName,
+  getCoupons,
+  getCourseByUser,
+  getQuizDetails,
+  getQuizDetailsByAdmin,
+  getQuizzes,
+  getSingleCourse,
+  getSingleCourseAdmin,
+  reviewQuizAttempt,
+  toggleCouponActive,
+  toggleCoursePublic,
+  updateQuiz,
+  uploadCourse,
+  validateCoupon,
+} from "../controllers/course.controller";
+import { authorizeRoles, isAuthenticated } from "../middleware/auth";
+import { updateAccessToken } from "../controllers/user.controller";
+import { uploadQuestion } from "../controllers/questionBank.controller";
+const courseRouter = express.Router();
+
+courseRouter.post(
+  "/create-course",
+  updateAccessToken,
+  isAuthenticated,
+  authorizeRoles("teacher"),
+  uploadCourse
+);
+courseRouter.post(
+  "/create-test/:id",
+  updateAccessToken,
+  isAuthenticated,
+  authorizeRoles("teacher"),
+  createQuiz
+);
+courseRouter.put(
+  "/update-test/:courseId/:quizId",
+  updateAccessToken,
+  isAuthenticated,
+  authorizeRoles("teacher"),
+  updateQuiz
+);
+courseRouter.delete(
+  "/delete-question/:courseId/:quizId/:questionId",
+  updateAccessToken,
+  isAuthenticated,
+  authorizeRoles("teacher"),
+  deleteQuestion
+);
+
+courseRouter.get(
+  "/get-all-tests/:id",
+  updateAccessToken,
+  isAuthenticated,
+  getQuizzes
+);
+courseRouter.get(
+  "/get-test/:cid/:qid",
+  updateAccessToken,
+  isAuthenticated,
+  getQuizDetails
+);
+courseRouter.get(
+  "/get-test-details/:cid/:qid",
+  updateAccessToken,
+  isAuthenticated,
+  authorizeRoles("teacher"),
+  getQuizDetailsByAdmin
+);
+courseRouter.get(
+  "/review-test/:cid/:qid",
+  updateAccessToken,
+  isAuthenticated,
+  reviewQuizAttempt
+);
+courseRouter.put(
+  "/attempt-test",
+  updateAccessToken,
+  isAuthenticated,
+  attemptQuiz2
+);
+courseRouter.put(
+  "/edit-course/:id",
+  updateAccessToken,
+  isAuthenticated,
+  authorizeRoles("teacher"),
+  editCourse
+);
+courseRouter.put(
+  "/add-coupon/:id",
+  updateAccessToken,
+  isAuthenticated,
+  authorizeRoles("admin"),
+  addCoupons
+);
+courseRouter.get("/get-coupons/:id", getCoupons);
+courseRouter.put("/validate-coupon/:id/:couponId", validateCoupon);
+courseRouter.put(
+  "/toggle-coupon-active/:courseId/:couponId",
+  toggleCouponActive
+);
+courseRouter.get("/get-course/:id", getSingleCourse);
+courseRouter.get(
+  "/get-course-admin/:id",
+  updateAccessToken,
+  isAuthenticated,
+  authorizeRoles("teacher"),
+  getSingleCourseAdmin
+);
+courseRouter.get("/get-courses", getAllCourses);
+courseRouter.get("/get-courses-name", getAllCoursesName);
+courseRouter.get(
+  "/get-course-content/:id",
+  updateAccessToken,
+  isAuthenticated,
+  getCourseByUser
+);
+courseRouter.put(
+  "/add-question",
+  updateAccessToken,
+  isAuthenticated,
+  addQuestion
+);
+courseRouter.put("/add-answer", updateAccessToken, isAuthenticated, addAnswer);
+courseRouter.put(
+  "/add-review/:id",
+  updateAccessToken,
+  isAuthenticated,
+  addReview
+);
+courseRouter.put(
+  "/add-reply",
+  updateAccessToken,
+  isAuthenticated,
+  authorizeRoles("teacher"),
+  addReplyToReview
+);
+courseRouter.get(
+  "/get-admin-courses",
+  updateAccessToken,
+  isAuthenticated,
+  authorizeRoles("teacher"),
+  getAdminAllCourse
+);
+courseRouter.put(
+  "/delete-course/:id",
+  updateAccessToken,
+  isAuthenticated,
+  authorizeRoles("teacher"),
+  deleteCourse
+);
+courseRouter.put(
+  "/toggle-course-public/:id",
+  updateAccessToken,
+  isAuthenticated,
+  authorizeRoles("teacher"),
+  toggleCoursePublic
+);
+
+export default courseRouter;

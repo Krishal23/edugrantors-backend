@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EDU GRANTORS Activation Mail</title>
+    <link href="/tailwind.css" rel="stylesheet">
+</head>
+
+<body class="bg-gray-100 py-10">
+    <div class="max-w-lg mx-auto bg-white shadow-lg rounded-lg overflow-hidden">
+        <!-- Header -->
+        <div class="bg-blue-500 text-white text-center py-4">
+      <img src="https://res.cloudinary.com/dyn63itl8/image/upload/v1737895337/zfch48efsemeekstemcb.png" alt="Edu Grantors Logo" class="mb-4" />
+            <h1 class="text-2xl font-bold">Welcome to EDU GRANTORS</h1>
+        </div>
+        <!-- Body -->
+        <div class="p-6">
+            <p class="text-lg mb-4">Hello <strong>
+                    <%= user.name %>
+                </strong>,</p>
+            <p class="mb-4">Your OTP for verifying your email address is:</p>
+            <h2 class="text-xl font-bold text-center bg-gray-200 py-3 rounded-lg mb-4">
+                <%= otp %>
+            </h2>
+            <p class="mb-4">Please use this code within the next 5 minutes to complete the verification process.</p>
+            <p class="text-sm text-gray-500">If you did not request this verification, please ignore this email.</p>
+
+        </div>
+        <!-- Footer -->
+        <div class="bg-gray-100 text-center p-4">
+            <p class="text-sm">If you have any questions, please contact us at
+                <a href="mailto:edugrantors@gmail.com" class="text-blue-500 hover:underline">edugrantors@gmail.com</a>.
+            </p>
+        </div>
+    </div>
+</body>
+
+</html>
