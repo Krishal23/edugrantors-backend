@@ -8,6 +8,7 @@ import {
   attemptQuiz2,
   createQuiz,
   deleteAnswer,
+  deleteComment,
   deleteCourse,
   deleteQuestion,
   editCourse,
@@ -146,6 +147,12 @@ courseRouter.put(
   updateAccessToken,
   isAuthenticated,
   deleteAnswer
+);
+courseRouter.put(
+  "/delete-comment",
+  updateAccessToken,
+  isAuthenticated,
+  deleteComment
 );
 // courseRouter.put("/add-answer", updateAccessToken, isAuthenticated, addAnswer);
 courseRouter.put(

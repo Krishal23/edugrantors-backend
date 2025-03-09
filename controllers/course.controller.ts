@@ -57,21 +57,16 @@ export const editCourse = CatchAsyncErrror(
         return next(new ErrorHandler("Course not found", 404));
       }
 
-      console.log("gsad", data, "agr");
-
-      // Convert Mongoose Document to a Plain Object to avoid issues
       let courseDataPlain = courseData.toObject();
 
-      // Ensure courseData remains an array
       data.courseData = Array.isArray(courseDataPlain.courseData)
         ? courseDataPlain.courseData.map((section, index) => ({
             ...section,
-            ...(data.courseData?.[index] || {}), // Update only provided indices
+            ...(data.courseData?.[index] || {}), 
             questions: section.questions || [], // Ensure questions remain unchanged
           }))
         : courseDataPlain.courseData;
 
-      console.log("gesar", data, "thr");
 
       // Check if there's a thumbnail to update
       if (thumbnail) {
@@ -99,7 +94,6 @@ export const editCourse = CatchAsyncErrror(
         { new: true }
       );
 
-      console.log("tet", course?.courseData, "aer");
 
       if (!course) {
         return next(new ErrorHandler("Failed to update course", 500));
@@ -453,6 +447,7 @@ export const deleteQuestion = CatchAsyncErrror(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { courseId, quizId, questionId } = req.params;
+      
 
       // Fetch the course by ID
       const courseData = await CourseModel.findById(courseId);
@@ -1297,6 +1292,7 @@ export const addAnswer = CatchAsyncErrror(
 
       // Step 5: Create new answer object
       const newAnswer: any = {
+        _id: new mongoose.Types.ObjectId(), 
         user: req.user,
         answer,
         createdAt: new Date().toISOString(),
@@ -1365,22 +1361,95 @@ export const addAnswer = CatchAsyncErrror(
   }
 );
 
-// delete answer
-export const deleteAnswer = CatchAsyncErrror(
+//delete comment
+export const deleteComment = CatchAsyncErrror(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { courseId, contentId, questionId, answer } = req.body;
-      console.log(req.body)
+      console.log("delette")
+      const { courseId, contentId, questionId } = req.body;
+
+      console.log("Received IDs:", { courseId, contentId, questionId });
+
+      if (!mongoose.Types.ObjectId.isValid(questionId)) {
+        return next(new ErrorHandler("Invalid questionId", 400));
+      }
 
       // Step 1: Fetch course by ID
       const course = await CourseModel.findById(courseId);
+      if (!course) {
+        return next(new ErrorHandler("Course not found", 404));
+      }
 
+      // Step 2: Locate the content inside the course
+      const courseContent = course.courseData.find((item: any) =>
+        item._id.toString() === contentId.toString()
+      );
+
+      if (!courseContent) {
+        return next(new ErrorHandler("Invalid contentId", 400));
+      }
+
+      // Step 3: Locate the specific question within the content
+      const questionIndex = courseContent.questions.findIndex((item: any) =>
+        item._id.toString() === questionId.toString()
+      );
+
+      console.log("Question index:", questionIndex);
+
+      if (questionIndex === -1) {
+        return next(new ErrorHandler("Question not found", 404));
+      }
+
+      // Step 4: Authorization - Only owner, teacher, or admin can delete
+      const question = courseContent.questions[questionIndex];
+      const questionOwner = question?.user?._id?.toString();
+
+      if (!questionOwner) {
+        return next(new ErrorHandler("Invalid question data", 400));
+      }
+
+      const isOwner = questionOwner === req.user?._id.toString();
+      const isAdminOrTeacher = req.user?.role === "admin" || req.user?.role === "teacher";
+
+      if (!isOwner && !isAdminOrTeacher) {
+        return next(new ErrorHandler("Not authorized to delete this question", 403));
+      }
+
+      // Step 5: Remove the question from the array
+      courseContent.questions.splice(questionIndex, 1);
+
+      // Step 6: Save the updated course document
+      await course.save();
+
+      // Step 7: Send response back to the client
+      res.status(200).json({
+        success: true,
+        message: "Question deleted successfully",
+      });
+    } catch (error: any) {
+      return next(new ErrorHandler(error.message, 500));
+    }
+  }
+);
+
+
+//delete answer
+export const deleteAnswer = CatchAsyncErrror(
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { courseId, contentId, questionId, answerId } = req.body;
+      console.log(courseId, contentId, questionId, answerId )
+
+      // Step 1: Fetch course by ID
+      const course = await CourseModel.findById(courseId);
+      if (!course) {
+        return next(new ErrorHandler("Course not found", 404));
+      }
 
       // Step 2: Locate the content inside the course
       const courseContent = course?.courseData?.find((item: any) => 
-        new mongoose.Types.ObjectId(contentId).equals(item._id)
+        item._id.toString() === contentId.toString()
       );
-      
 
       if (!courseContent) {
         return next(new ErrorHandler("Invalid contentId", 400));
@@ -1388,30 +1457,29 @@ export const deleteAnswer = CatchAsyncErrror(
 
       // Step 3: Locate the specific question within the content
       const question = courseContent?.questions?.find((item: any) =>
-      {
-
-        item._id.equals(questionId)
-      }
+        item._id.toString() === questionId.toString()
       );
+
       if (!question) {
         return next(new ErrorHandler("Invalid questionId", 400));
       }
 
-      // Step 4: Find the answer within the question replies
+      // Step 4: Find the answer within the question replies using `_id`
       const answerIndex = question.questionReplies.findIndex((reply: any) =>
-        reply.answer === answer && reply.user._id.toString() === req.user?.id.toString()
+        reply._id.toString() === answerId.toString()
       );
-      if (answerIndex === -1) {
-        return next(new ErrorHandler("Answer not found or unauthorized", 400));
-      }
 
-      // Step 5: Authorization - Ensure only the answer owner, teacher, or admin can delete
-      if (
-        question.questionReplies[answerIndex].user._id.toString() !==
-          req.user?._id.toString() &&
-        req.user?.role !== "admin" &&
-        req.user?.role !== "teacher"
-      ) {
+      if (answerIndex === -1) {
+        return next(new ErrorHandler("Answer not found", 404));
+      }
+      console.log(answerIndex)
+
+      // Step 5: Authorization - Ensure only the owner, teacher, or admin can delete
+      const answerOwner = question.questionReplies[answerIndex].user._id.toString();
+      const isOwner = answerOwner === req.user?._id.toString();
+      const isAdminOrTeacher = req.user?.role === "admin" || req.user?.role === "teacher";
+
+      if (!isOwner && !isAdminOrTeacher) {
         return next(new ErrorHandler("Not authorized to delete this answer", 403));
       }
 
@@ -1419,7 +1487,7 @@ export const deleteAnswer = CatchAsyncErrror(
       question.questionReplies.splice(answerIndex, 1);
 
       // Step 7: Save the updated course document
-      await course?.save();
+      await course.save();
 
       // Step 8: Send response back to the client
       res.status(200).json({
@@ -1431,6 +1499,8 @@ export const deleteAnswer = CatchAsyncErrror(
     }
   }
 );
+
+
 
 
 //add reviews in course
