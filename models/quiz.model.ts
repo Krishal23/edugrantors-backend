@@ -105,6 +105,7 @@ const quizSchema = new Schema<IQuiz>(
       {
         userId: { type: Schema.Types.ObjectId, ref: "User" },
         name: { type: String, required: true },
+        marks:{type: Number}
       },
     ],
     totalAttempts: {

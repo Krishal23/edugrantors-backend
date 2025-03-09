@@ -914,6 +914,19 @@ export const reviewQuizAttempt = CatchAsyncErrror(
         };
       });
 
+
+       // Update marks in the quiz's attemptedBy array
+       await CourseModel.updateOne(
+        { _id: courseId, "quizzes._id": quizId, "quizzes.attemptedBy.userId": userId },
+        {
+          $set: {
+            "quizzes.$[].attemptedBy.$[user].marks": existingAttempt?.marksScored,
+          },
+        },
+        { arrayFilters: [{ "user.userId": userId }] }
+      );
+
+
       res.status(200).json({
         success: true,
         message: "Quiz review fetched successfully.",
@@ -936,103 +949,103 @@ export const reviewQuizAttempt = CatchAsyncErrror(
   }
 );
 
-export const reviewQuizAttempt2 = CatchAsyncErrror(
-  async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const userId = req.user?._id;
-      const { cid: courseId, qid: quizId } = req.params;
+// export const reviewQuizAttempt2 = CatchAsyncErrror(
+//   async (req: Request, res: Response, next: NextFunction) => {
+//     try {
+//       const userId = req.user?._id;
+//       const { cid: courseId, qid: quizId } = req.params;
 
-      // Validate input
-      if (!courseId || !quizId || !userId) {
-        return next(
-          new ErrorHandler("Please provide userId, courseId, and quizId.", 400)
-        );
-      }
+//       // Validate input
+//       if (!courseId || !quizId || !userId) {
+//         return next(
+//           new ErrorHandler("Please provide userId, courseId, and quizId.", 400)
+//         );
+//       }
 
-      // Fetch user data
-      const user = await userModel.findById(userId);
-      if (!user) {
-        return next(new ErrorHandler("User not found", 404));
-      }
+//       // Fetch user data
+//       const user = await userModel.findById(userId);
+//       if (!user) {
+//         return next(new ErrorHandler("User not found", 404));
+//       }
 
-      // Check if the user has attempted the quiz
-      const existingAttempt = user.testsAttempted.find(
-        (attempt: any) =>
-          attempt.courseId.toString() === courseId &&
-          attempt.quizId.toString() === quizId
-      );
-      if (!existingAttempt) {
-        return next(new ErrorHandler("You have not attempted this quiz.", 404));
-      }
+//       // Check if the user has attempted the quiz
+//       const existingAttempt = user.testsAttempted.find(
+//         (attempt: any) =>
+//           attempt.courseId.toString() === courseId &&
+//           attempt.quizId.toString() === quizId
+//       );
+//       if (!existingAttempt) {
+//         return next(new ErrorHandler("You have not attempted this quiz.", 404));
+//       }
 
-      // Fetch the course and quiz
-      const course = await CourseModel.findById(courseId);
-      if (!course) {
-        return next(new ErrorHandler("Course not found", 404));
-      }
+//       // Fetch the course and quiz
+//       const course = await CourseModel.findById(courseId);
+//       if (!course) {
+//         return next(new ErrorHandler("Course not found", 404));
+//       }
 
-      const quiz = course.quizzes.find((quiz: IQuiz) => quiz._id.toString() === quizId); // Fetch quiz by ID from course's quizzes
-      if (!quiz) {
-        return next(new ErrorHandler("Quiz not found in the course", 404));
-      }
+//       const quiz = course.quizzes.find((quiz: IQuiz) => quiz._id.toString() === quizId); // Fetch quiz by ID from course's quizzes
+//       if (!quiz) {
+//         return next(new ErrorHandler("Quiz not found in the course", 404));
+//       }
 
-      // Create a map of attempted answers for quick lookup
-      const attemptedAnswersMap = new Map(
-        existingAttempt.answers.map((answer: any) => [
-          answer.questionId.toString(),
-          answer,
-        ])
-      );
+//       // Create a map of attempted answers for quick lookup
+//       const attemptedAnswersMap = new Map(
+//         existingAttempt.answers.map((answer: any) => [
+//           answer.questionId.toString(),
+//           answer,
+//         ])
+//       );
 
-      // Prepare the response with all questions
-      const reviewedAnswers = quiz.questions.map((question: any) => {
-        const attempt = attemptedAnswersMap.get(question._id.toString());
+//       // Prepare the response with all questions
+//       const reviewedAnswers = quiz.questions.map((question: any) => {
+//         const attempt = attemptedAnswersMap.get(question._id.toString());
 
-        // Check if the question was attempted
-        const selectedAnswer = attempt ? attempt.selectedAnswer : null;
-        let isCorrect = false;
+//         // Check if the question was attempted
+//         const selectedAnswer = attempt ? attempt.selectedAnswer : null;
+//         let isCorrect = false;
 
-        // For "multiple" questions, sort and compare the selected answer and correct answer
-        if (question.type === "multiple") {
-          const correctAnswer = question.correctAnswer.sort();
-          isCorrect =
-            selectedAnswer &&
-            JSON.stringify(selectedAnswer.sort()) ===
-              JSON.stringify(correctAnswer);
-        } else {
-          // For other types, check direct equality
-          isCorrect = selectedAnswer === question.correctAnswer;
-        }
+//         // For "multiple" questions, sort and compare the selected answer and correct answer
+//         if (question.type === "multiple") {
+//           const correctAnswer = question.correctAnswer.sort();
+//           isCorrect =
+//             selectedAnswer &&
+//             JSON.stringify(selectedAnswer.sort()) ===
+//               JSON.stringify(correctAnswer);
+//         } else {
+//           // For other types, check direct equality
+//           isCorrect = selectedAnswer === question.correctAnswer;
+//         }
 
-        return {
-          type: question.type,
-          question: question.question,
-          options: question.options.map((option: any) => ({
-            text: option.text,
-          })),
-          selectedAnswer, // Include the user's selected answer or null if not attempted
-          isCorrect: selectedAnswer !== null ? isCorrect : false, // Mark correctness only if attempted
-          correctAnswer: question.correctAnswer, // Provide correct answer
-          explanation: question.explanation, // Provide explanation
-          marks: question.marks, // Marks assigned for the question
-          attempted: !!selectedAnswer, // Indicate whether the question was attempted
-        };
-      });
+//         return {
+//           type: question.type,
+//           question: question.question,
+//           options: question.options.map((option: any) => ({
+//             text: option.text,
+//           })),
+//           selectedAnswer, // Include the user's selected answer or null if not attempted
+//           isCorrect: selectedAnswer !== null ? isCorrect : false, // Mark correctness only if attempted
+//           correctAnswer: question.correctAnswer, // Provide correct answer
+//           explanation: question.explanation, // Provide explanation
+//           marks: question.marks, // Marks assigned for the question
+//           attempted: !!selectedAnswer, // Indicate whether the question was attempted
+//         };
+//       });
 
-      res.status(200).json({
-        success: true,
-        message: "Quiz review fetched successfully.",
-        result: {
-          totalQuestions: quiz.questions.length,
-          totalScore: existingAttempt.totalScore,
-          answers: reviewedAnswers,
-        },
-      });
-    } catch (error: any) {
-      return next(new ErrorHandler(error.message, 500));
-    }
-  }
-);
+//       res.status(200).json({
+//         success: true,
+//         message: "Quiz review fetched successfully.",
+//         result: {
+//           totalQuestions: quiz.questions.length,
+//           totalScore: existingAttempt.totalScore,
+//           answers: reviewedAnswers,
+//         },
+//       });
+//     } catch (error: any) {
+//       return next(new ErrorHandler(error.message, 500));
+//     }
+//   }
+// );
 
 //get single course --without purchasing
 export const getSingleCourse = CatchAsyncErrror(
@@ -1099,6 +1112,57 @@ export const getSingleCourseAdmin = CatchAsyncErrror(
   }
 );
 
+//get marks of quiz
+export const getUserQuizMarksAdmin = CatchAsyncErrror(
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { cid: courseId, qid: quizId } = req.params; // Correctly extract params
+
+      console.log(courseId,"rgsd",quizId)
+      // Fetch the course
+      const course = await CourseModel.findById(courseId).select("quizzes");
+      if (!course) {
+        return next(new ErrorHandler("Course not found", 404));
+      }
+
+      // Find the quiz in the course
+      const quiz = course.quizzes.find((q: any) => q._id.toString() === quizId);
+      if (!quiz) {
+        return next(new ErrorHandler("Quiz not found in the course", 404));
+      }
+
+      // Extract user IDs who attempted the quiz
+      const userIds = quiz?.attemptedBy.map((attempt: any) => attempt.userId);
+
+      // Fetch users who attempted the quiz and get their quiz progress
+      const users = await userModel.find({ _id: { $in: userIds } }).select("name quizProgress");
+
+      // Filter user progress for this quiz and course
+      const results = users.map((user: any) => {
+        const attempt = user.quizProgress.find(
+          (q: any) => q.quizId.toString() === quizId && q.courseId.toString() === courseId
+        );
+
+        return attempt
+          ? {
+              name: user.name,
+              marksScored: attempt.marksScored,
+            }
+          : null;
+      }).filter(Boolean); // Remove users who didn't attempt
+
+      // Send response
+      res.status(200).json({
+        success: true,
+        message: "Quiz marks fetched successfullyy.",
+        results, // Contains name and marksScored for each user
+      });
+    } catch (error: any) {
+      return next(new ErrorHandler(error.message, 500));
+    }
+  }
+);
+
 //get all courses --without purchasing
 export const getAllCourses = CatchAsyncErrror(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -1148,6 +1212,7 @@ export const getAllCoursesName = CatchAsyncErrror(
     }
   }
 );
+
 
 export const getCourseByUser = CatchAsyncErrror(
   async (req: Request, res: Response, next: NextFunction) => {

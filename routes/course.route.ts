@@ -22,6 +22,7 @@ import {
   getQuizzes,
   getSingleCourse,
   getSingleCourseAdmin,
+  getUserQuizMarksAdmin,
   reviewQuizAttempt,
   toggleCouponActive,
   toggleCoursePublic,
@@ -94,6 +95,13 @@ courseRouter.put(
   isAuthenticated,
   attemptQuiz2
 );
+courseRouter.get(
+  "/get-users-test-details/:cid/:qid",
+  updateAccessToken,
+  isAuthenticated,
+  getUserQuizMarksAdmin
+);
+
 courseRouter.put(
   "/edit-course/:id",
   updateAccessToken,
