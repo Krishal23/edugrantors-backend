@@ -47,7 +47,10 @@ interface ICourse extends Document {
   description: string;
   price: number;
   estimatedPrice?: number;
-  thumbnail: object;
+  thumbnail: {
+    public_id: string;
+    url: string;
+  };
   tags: string;
   level: string;
   demoUrl: string;

@@ -1132,7 +1132,7 @@ export const getUserQuizMarksAdmin = CatchAsyncErrror(
       }
 
       // Extract user IDs who attempted the quiz
-      const userIds = quiz?.attemptedBy.map((attempt: any) => attempt.userId);
+      const userIds = (quiz?.attemptedBy ?? []).map((attempt: any) => attempt.userId);
 
       // Fetch users who attempted the quiz and get their quiz progress
       const users = await userModel.find({ _id: { $in: userIds } }).select("name quizProgress");
@@ -1473,7 +1473,7 @@ export const deleteComment = CatchAsyncErrror(
         return next(new ErrorHandler("Invalid question data", 400));
       }
 
-      const isOwner = questionOwner === req.user?._id.toString();
+      const isOwner = questionOwner === (req.user as { _id: string })?._id.toString();
       const isAdminOrTeacher = req.user?.role === "admin" || req.user?.role === "teacher";
 
       if (!isOwner && !isAdminOrTeacher) {
@@ -1540,8 +1540,8 @@ export const deleteAnswer = CatchAsyncErrror(
       console.log(answerIndex)
 
       // Step 5: Authorization - Ensure only the owner, teacher, or admin can delete
-      const answerOwner = question.questionReplies[answerIndex].user._id.toString();
-      const isOwner = answerOwner === req.user?._id.toString();
+      const answerOwner = (question.questionReplies[answerIndex].user as { _id: string })._id.toString();
+      const isOwner = answerOwner === (req.user as { _id: string })?._id.toString();
       const isAdminOrTeacher = req.user?.role === "admin" || req.user?.role === "teacher";
 
       if (!isOwner && !isAdminOrTeacher) {
