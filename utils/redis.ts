@@ -17,7 +17,7 @@ const createRedisClient = () => {
         port: parseInt(process.env.REDIS_PORT || '6379'),
         password: process.env.REDIS_PASSWORD,
         retryStrategy: (times: number) => {
-            const delay = Math.min(Math.exp(times) * 100, 20000); // Exponential backoff up to 20s
+            const delay = Math.min(Math.exp(times) * 100, 20000);
             console.log(`Retrying Redis connection in ${delay}ms... (attempt ${times})`);
             return delay;
         },
@@ -25,12 +25,9 @@ const createRedisClient = () => {
         enableOfflineQueue: true,
         reconnectOnError: (err) => {
             const targetError = 'READONLY';
-            if (err.message.includes(targetError)) {
-                return true;
-            }
-            return false;
+            return err.message.includes(targetError);
         },
-        lazyConnect: true // Don't connect immediately
+        lazyConnect: false // Changed to false to connect immediately
     });
 
     client.on('error', (err) => {
@@ -57,32 +54,43 @@ const createRedisClient = () => {
 };
 
 const getCache = async () => {
-    // If Redis is disabled or unavailable, use memory cache
     if (process.env.NODE_ENV === 'development' && process.env.REDIS_DISABLED === 'true') {
         return memoryCache;
     }
 
-    // Try to get or create Redis client
     if (!redisClient) {
         redisClient = createRedisClient();
-        if (redisClient) {
-            try {
-                await redisClient.connect();
-            } catch (error) {
-                console.error('Failed to establish Redis connection:', error);
-                redisClient = null;
-                if (process.env.NODE_ENV === 'development') {
-                    console.log('Falling back to memory cache');
-                    return memoryCache;
-                }
+    }
+
+    if (redisClient) {
+        try {
+            // Test connection with ping
+            await redisClient.ping();
+        } catch (error) {
+            console.error('Failed to establish Redis connection:', error);
+            redisClient = null;
+            if (process.env.NODE_ENV === 'development') {
+                console.log('Falling back to memory cache');
+                return memoryCache;
             }
         }
     }
     return redisClient || memoryCache;
 };
 
-// Redis operations wrapper with fallback mechanisms
 export const redis = {
+    ping: async (): Promise<boolean> => {
+        try {
+            const cache = await getCache();
+            if (cache === memoryCache) return true;
+            await (cache as Redis).ping();
+            return true;
+        } catch (error) {
+            console.error('Redis ping failed:', error);
+            return false;
+        }
+    },
+
     get: async (key: string): Promise<string | null> => {
         try {
             const cache = await getCache();
@@ -157,6 +165,5 @@ const closeRedisConnection = async () => {
     }
 };
 
-// Handle process termination
 process.on('SIGTERM', closeRedisConnection);
 process.on('SIGINT', closeRedisConnection);
