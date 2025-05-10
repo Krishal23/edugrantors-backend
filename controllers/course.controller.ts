@@ -16,7 +16,7 @@ import { IQuiz, IQuestion as IQuizQuestion } from "../models/quiz.model";
 //upload course
 export const uploadCourse = CatchAsyncErrror(
   async (req: Request, res: Response, next: NextFunction) => {
-    console.log("hello");
+    // console.log("hello");
     try {
       const data = req.body;
       const userId = req.user?._id;
@@ -60,10 +60,10 @@ export const editCourse = CatchAsyncErrror(
 
       data.courseData = Array.isArray(courseDataPlain.courseData)
         ? courseDataPlain.courseData.map((section, index) => ({
-            ...section,
-            ...(data.courseData?.[index] || {}), 
-            questions: section.questions || [], // Ensure questions remain unchanged
-          }))
+          ...section,
+          ...(data.courseData?.[index] || {}),
+          questions: section.questions || [], // Ensure questions remain unchanged
+        }))
         : courseDataPlain.courseData;
 
 
@@ -112,11 +112,11 @@ export const updateCourse = CatchAsyncErrror(
   async (req: Request, res: Response, next: NextFunction) => {
     const session = await mongoose.startSession();
     session.startTransaction();
-    
+
     try {
       const { id } = req.params;
       const data = req.body;
-      
+
       const course = await CourseModel.findById(id).session(session);
       if (!course) {
         await session.abortTransaction();
@@ -125,7 +125,7 @@ export const updateCourse = CatchAsyncErrror(
 
       Object.assign(course, data);
       await course.save({ session });
-      
+
       try {
         await redis.set(id, JSON.stringify(course), "EX", 604800); // 7 days cache
       } catch (cacheError) {
@@ -134,7 +134,7 @@ export const updateCourse = CatchAsyncErrror(
       }
 
       await session.commitTransaction();
-      
+
       res.status(200).json({
         success: true,
         course
@@ -294,9 +294,8 @@ export const toggleCouponActive = CatchAsyncErrror(
 
       res.status(200).json({
         success: true,
-        message: `Coupon ${couponId} is now ${
-          coupon.isActive ? "active" : "inactive"
-        }`,
+        message: `Coupon ${couponId} is now ${coupon.isActive ? "active" : "inactive"
+          }`,
         coupon,
       });
     } catch (error: any) {
@@ -484,7 +483,7 @@ export const deleteQuestion = CatchAsyncErrror(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { courseId, quizId, questionId } = req.params;
-      
+
 
       // Fetch the course by ID
       const courseData = await CourseModel.findById(courseId);
@@ -724,7 +723,13 @@ const assessResponses = (quiz: any, responses: any[]) => {
           );
         break;
       case "numerical":
-        isCorrect = question.correctAnswer === response.selectedAnswer;
+        if (typeof question.correctAnswer === "number" && typeof response.selectedAnswer === "number") {
+          const tolerance = 1e-9;
+          isCorrect = Math.abs(question.correctAnswer - response.selectedAnswer) < tolerance;
+        } else {
+          isCorrect = String(question.correctAnswer).trim() === String(response.selectedAnswer).trim();
+        }
+        console.log(question.correctAnswer, response.selectedAnswer, isCorrect);
         break;
       default:
         isCorrect = false;
@@ -749,6 +754,7 @@ const assessResponses = (quiz: any, responses: any[]) => {
     };
   });
 
+
   // Ensure marksScored does not go below zero
   marksScored = Math.max(marksScored);
 
@@ -771,11 +777,10 @@ export const attemptQuiz2 = CatchAsyncErrror(
         completionTime,
       } = req.body.result;
       const userId: any = req.user?._id;
+      // console.log(userId, "userId");
 
       if (!courseId || !quizId || !responses) {
-        return next(
-          new ErrorHandler("Please provide all required fields.", 400)
-        );
+        return next(new ErrorHandler("Please provide all required fields.", 400));
       }
 
       const courseData = await CourseModel.findById(courseId);
@@ -783,7 +788,7 @@ export const attemptQuiz2 = CatchAsyncErrror(
         return next(new ErrorHandler("Course not found", 404));
       }
 
-      const quiz = courseData.quizzes.find((quiz: IQuiz) => quiz._id.toString() === quizId); // Fetch quiz by ID from course's quizzes
+      const quiz = courseData.quizzes.find((quiz: IQuiz) => quiz._id.toString() === quizId);
       if (!quiz) {
         return next(new ErrorHandler("Quiz not found in the course", 404));
       }
@@ -796,31 +801,16 @@ export const attemptQuiz2 = CatchAsyncErrror(
         return next(new ErrorHandler("User not found", 404));
       }
 
-      const isEnrolled = user.courses.some(
-        (course: any) => course.courseId.toString() === courseId
-      );
+      const isEnrolled = user.courses.some((course: any) => course.courseId?.toString() === courseId?.toString());
       if (!isEnrolled) {
-        return next(
-          new ErrorHandler("You are not enrolled in this course.", 403)
-        );
+        return next(new ErrorHandler("You are not enrolled in this course.", 403));
       }
 
-      // const existingAttempt = user.testsAttempted.find(
-      //     (attempt: any) => attempt.courseId.toString() === courseId && attempt.quizId.toString() === quizId
-      // );
-      // if (existingAttempt) {
-      //     return next(new ErrorHandler("You have already attempted this quiz.", 400));
-      // }
-      // Find and remove existing attempt
-      const existingAttemptIndex = user.quizProgress.findIndex(
+      // Remove existing attempt if found
+      user.quizProgress = user.quizProgress.filter(
         (attempt: any) =>
-          attempt.courseId.toString() === courseId &&
-          attempt.quizId.toString() === quizId
+          !(attempt.courseId.toString() === courseId && attempt.quizId.toString() === quizId)
       );
-
-      if (existingAttemptIndex !== -1) {
-        user.quizProgress.splice(existingAttemptIndex, 1); // Remove the existing attempt
-      }
 
       const {
         assessedResponses,
@@ -828,6 +818,7 @@ export const attemptQuiz2 = CatchAsyncErrror(
         totalQuestionsAttempted,
         marksScored,
       } = assessResponses(quiz, responses);
+      // console.log(assessedResponses, "assessedResponses"); 
 
       const result: IQuizProgress = {
         quizId,
@@ -840,19 +831,27 @@ export const attemptQuiz2 = CatchAsyncErrror(
         questions: assessedResponses,
       };
       user.quizProgress.push(result);
+      // console.log(user.quizProgress, "user.quizProgress");
       await user.save();
 
-      // Check if the user has already been recorded in attemptedBy
-      const userAlreadyAttempted = quiz.attemptedBy?.some(
-        (attempt: any) => attempt.userId.toString() === userId.toString()
+      // console.log("123huafosdv", quiz.attemptedBy);
+      // console.log(userId, "userAlreadyAttemptedqwef");
+
+      // Ensure quiz.attemptedBy is an array before using .some()
+      const userAlreadyAttempted = Array.isArray(quiz.attemptedBy) && quiz.attemptedBy.some(
+        (attempt: any) => attempt._id.toString() === userId.toString()
       );
 
+      // console.log("userAlreadyAttempted:", userAlreadyAttempted);
+
       if (!userAlreadyAttempted) {
-        quiz.attemptedBy?.push({ user: userId, name: user.name } as any); // Add user id and name
-        quiz.totalAttempts = (quiz.totalAttempts || 0) + 1; // Increment attempts count
+        quiz.attemptedBy = quiz.attemptedBy || [];
+        quiz.attemptedBy.push({ _id: userId, name: user.name } as any);
+        quiz.totalAttempts = (quiz.totalAttempts || 0) + 1;
       }
 
       await courseData.save();
+      // console.log("result", result);
 
       res.status(200).json({
         success: true,
@@ -903,10 +902,11 @@ export const reviewQuizAttempt = CatchAsyncErrror(
         return next(new ErrorHandler("Course not found", 404));
       }
 
-      const quiz = course.quizzes.find((quiz: IQuiz) => quiz._id.toString() === quizId); // Fetch quiz by ID from course's quizzes
+      const quiz = course.quizzes.find((quiz: IQuiz) => quiz._id.toString() === quizId);
       if (!quiz) {
         return next(new ErrorHandler("Quiz not found in the course", 404));
       }
+      // console.log(quiz, "quiz");
 
       // Create a map of attempted answers for quick lookup
       const attemptedAnswersMap = new Map(
@@ -915,24 +915,29 @@ export const reviewQuizAttempt = CatchAsyncErrror(
           answer,
         ])
       );
+      // console.log(attemptedAnswersMap, "attemptedAnswersMap");
 
       // Prepare the response with all questions
       const reviewedAnswers = quiz.questions.map((question: any) => {
         const attempt = attemptedAnswersMap.get(question._id.toString());
         const selectedAnswer = attempt ? attempt.selectedAnswer : null;
-        const isAttempted = attempt ? attempt.isAttempted : null;
+        const isAttempted = attempt ? attempt.isAttempted : false;
 
         let isCorrect = false;
         if (question.type === "multiple") {
-          const correctAnswer = question.correctAnswer.sort();
+          const correctAnswer = Array.isArray(question.correctAnswer)
+            ? question.correctAnswer.sort()
+            : [];
           isCorrect =
             selectedAnswer &&
             Array.isArray(selectedAnswer) &&
-            JSON.stringify(selectedAnswer.sort()) ===
-              JSON.stringify(correctAnswer);
+            correctAnswer.length === selectedAnswer.length &&
+            correctAnswer.every((answer: string) => selectedAnswer.includes(answer));
         } else {
-          isCorrect = selectedAnswer === question.correctAnswer;
+          isCorrect = String(selectedAnswer).trim() === String(question.correctAnswer).trim();
         }
+
+        // console.log(isCorrect, "isCorrect");
 
         return {
           type: question.type,
@@ -948,21 +953,20 @@ export const reviewQuizAttempt = CatchAsyncErrror(
           marks: isCorrect ? question.marks : 0,
           negativeMarks: isCorrect ? 0 : question.negativeMarks,
           image: question.image,
+          imageExplain:question.imageExplain,
         };
       });
 
-
-       // Update marks in the quiz's attemptedBy array
-       await CourseModel.updateOne(
-        { _id: courseId, "quizzes._id": quizId, "quizzes.attemptedBy.userId": userId },
+      // Update marks in the quiz's attemptedBy array
+      await CourseModel.updateOne(
+        { _id: courseId, "quizzes._id": quizId },
         {
           $set: {
-            "quizzes.$[].attemptedBy.$[user].marks": existingAttempt?.marksScored,
+            "quizzes.$.attemptedBy.$[user].marks": existingAttempt?.marksScored,
           },
         },
-        { arrayFilters: [{ "user.userId": userId }] }
+        { arrayFilters: [{ "user._id": userId }] }
       );
-
 
       res.status(200).json({
         success: true,
@@ -986,104 +990,6 @@ export const reviewQuizAttempt = CatchAsyncErrror(
   }
 );
 
-// export const reviewQuizAttempt2 = CatchAsyncErrror(
-//   async (req: Request, res: Response, next: NextFunction) => {
-//     try {
-//       const userId = req.user?._id;
-//       const { cid: courseId, qid: quizId } = req.params;
-
-//       // Validate input
-//       if (!courseId || !quizId || !userId) {
-//         return next(
-//           new ErrorHandler("Please provide userId, courseId, and quizId.", 400)
-//         );
-//       }
-
-//       // Fetch user data
-//       const user = await userModel.findById(userId);
-//       if (!user) {
-//         return next(new ErrorHandler("User not found", 404));
-//       }
-
-//       // Check if the user has attempted the quiz
-//       const existingAttempt = user.testsAttempted.find(
-//         (attempt: any) =>
-//           attempt.courseId.toString() === courseId &&
-//           attempt.quizId.toString() === quizId
-//       );
-//       if (!existingAttempt) {
-//         return next(new ErrorHandler("You have not attempted this quiz.", 404));
-//       }
-
-//       // Fetch the course and quiz
-//       const course = await CourseModel.findById(courseId);
-//       if (!course) {
-//         return next(new ErrorHandler("Course not found", 404));
-//       }
-
-//       const quiz = course.quizzes.find((quiz: IQuiz) => quiz._id.toString() === quizId); // Fetch quiz by ID from course's quizzes
-//       if (!quiz) {
-//         return next(new ErrorHandler("Quiz not found in the course", 404));
-//       }
-
-//       // Create a map of attempted answers for quick lookup
-//       const attemptedAnswersMap = new Map(
-//         existingAttempt.answers.map((answer: any) => [
-//           answer.questionId.toString(),
-//           answer,
-//         ])
-//       );
-
-//       // Prepare the response with all questions
-//       const reviewedAnswers = quiz.questions.map((question: any) => {
-//         const attempt = attemptedAnswersMap.get(question._id.toString());
-
-//         // Check if the question was attempted
-//         const selectedAnswer = attempt ? attempt.selectedAnswer : null;
-//         let isCorrect = false;
-
-//         // For "multiple" questions, sort and compare the selected answer and correct answer
-//         if (question.type === "multiple") {
-//           const correctAnswer = question.correctAnswer.sort();
-//           isCorrect =
-//             selectedAnswer &&
-//             JSON.stringify(selectedAnswer.sort()) ===
-//               JSON.stringify(correctAnswer);
-//         } else {
-//           // For other types, check direct equality
-//           isCorrect = selectedAnswer === question.correctAnswer;
-//         }
-
-//         return {
-//           type: question.type,
-//           question: question.question,
-//           options: question.options.map((option: any) => ({
-//             text: option.text,
-//           })),
-//           selectedAnswer, // Include the user's selected answer or null if not attempted
-//           isCorrect: selectedAnswer !== null ? isCorrect : false, // Mark correctness only if attempted
-//           correctAnswer: question.correctAnswer, // Provide correct answer
-//           explanation: question.explanation, // Provide explanation
-//           marks: question.marks, // Marks assigned for the question
-//           attempted: !!selectedAnswer, // Indicate whether the question was attempted
-//         };
-//       });
-
-//       res.status(200).json({
-//         success: true,
-//         message: "Quiz review fetched successfully.",
-//         result: {
-//           totalQuestions: quiz.questions.length,
-//           totalScore: existingAttempt.totalScore,
-//           answers: reviewedAnswers,
-//         },
-//       });
-//     } catch (error: any) {
-//       return next(new ErrorHandler(error.message, 500));
-//     }
-//   }
-// );
-
 //get single course --without purchasing
 export const getSingleCourse = CatchAsyncErrror(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -1099,7 +1005,9 @@ export const getSingleCourse = CatchAsyncErrror(
         return next(new ErrorHandler("Course not found", 404));
       }
 
-      await redis.set(courseId, JSON.stringify(course), "EX", 604800); // Cache for 7Days
+      if (courseId) {
+        await redis.set(courseId, JSON.stringify(course), "EX", 604800); // Cache for 7Days
+      }
 
       return res.status(200).json({
         success: true,
@@ -1120,6 +1028,7 @@ export const getSingleCourseAdmin = CatchAsyncErrror(
       const course = await CourseModel.findById(courseId).select(
         "-courseData.videoUrl -courseData.suggestion -courseData.questions -courseData.links "
       );
+      // console.log(course, "course");
 
       if (!course) {
         return next(new ErrorHandler("Course not found", 404));
@@ -1154,45 +1063,60 @@ export const getUserQuizMarksAdmin = CatchAsyncErrror(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { cid: courseId, qid: quizId } = req.params; // Correctly extract params
+      // console.log(courseId, "rgsd", quizId);
 
-      console.log(courseId,"rgsd",quizId)
       // Fetch the course
       const course = await CourseModel.findById(courseId).select("quizzes");
       if (!course) {
         return next(new ErrorHandler("Course not found", 404));
       }
 
+      // console.log(course, "cours/e");
+
       // Find the quiz in the course
       const quiz = course.quizzes.find((q: any) => q._id.toString() === quizId);
       if (!quiz) {
         return next(new ErrorHandler("Quiz not found in the course", 404));
       }
+      // console.log(quiz.attemptedBy, "quiz");
 
       // Extract user IDs who attempted the quiz
-      const userIds = (quiz?.attemptedBy ?? []).map((attempt: any) => attempt.userId);
+      // Extract user IDs who attempted the quiz
+      const userIds = (quiz?.attemptedBy ?? [])
+        .filter((attempt: any) => attempt?._id) // Use `_id` instead of `userId`
+        .map((attempt: any) => attempt._id);    // Map `_id` instead of `userId`
+      // console.log(userIds, "userId");
 
       // Fetch users who attempted the quiz and get their quiz progress
       const users = await userModel.find({ _id: { $in: userIds } }).select("name quizProgress");
-
+      console.log(users, "users");
       // Filter user progress for this quiz and course
       const results = users.map((user: any) => {
+        console.log(user.quizProgress, "quizProgress for user:", user.name); // Debugging log
+
         const attempt = user.quizProgress.find(
           (q: any) => q.quizId.toString() === quizId && q.courseId.toString() === courseId
         );
 
         return attempt
           ? {
-              name: user.name,
-              marksScored: attempt.marksScored,
-            }
+            name: user.name,
+            userId: user._id,
+            totalQuestionsAttempted: attempt.totalQuestionsAttempted,
+            totalCorrectQuestions: attempt.totalCorrectQuestions,
+
+            marksScored: attempt.marksScored,
+          }
           : null;
       }).filter(Boolean); // Remove users who didn't attempt
+
+      console.log(results, "Filtered results");
 
       // Send response
       res.status(200).json({
         success: true,
-        message: "Quiz marks fetched successfullyy.",
-        results, // Contains name and marksScored for each user
+        message: "Quiz marks fetched successfully.",
+        results,
       });
     } catch (error: any) {
       return next(new ErrorHandler(error.message, 500));
@@ -1260,7 +1184,7 @@ export const getCourseByUser = CatchAsyncErrror(
         return next(new ErrorHandler("User not authenticated", 401));
       }
 
-      console.log("User ID:", userId);
+      // console.log("User ID:", userId);
 
       // Fetch user data (if not already in req.user)
       const user = await userModel.findById(userId).populate("courses");
@@ -1270,7 +1194,7 @@ export const getCourseByUser = CatchAsyncErrror(
 
       const userCourseList = user.courses;
       const courseId = req.params.id;
-      console.log("User'ss courses:", userCourseList);
+      // console.log("User'ss courses:", userCourseList);
 
       // Check if course exists in user's courses
       const courseExists = userCourseList?.find(
@@ -1394,7 +1318,7 @@ export const addAnswer = CatchAsyncErrror(
 
       // Step 5: Create new answer object
       const newAnswer: any = {
-        _id: new mongoose.Types.ObjectId(), 
+        _id: new mongoose.Types.ObjectId(),
         user: req.user,
         answer,
         createdAt: new Date().toISOString(),
@@ -1467,10 +1391,10 @@ export const addAnswer = CatchAsyncErrror(
 export const deleteComment = CatchAsyncErrror(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      console.log("delette")
+      // console.log("delette")
       const { courseId, contentId, questionId } = req.body;
 
-      console.log("Received IDs:", { courseId, contentId, questionId });
+      // console.log("Received IDs:", { courseId, contentId, questionId });
 
       if (!mongoose.Types.ObjectId.isValid(questionId)) {
         return next(new ErrorHandler("Invalid questionId", 400));
@@ -1496,7 +1420,7 @@ export const deleteComment = CatchAsyncErrror(
         item._id.toString() === questionId.toString()
       );
 
-      console.log("Question index:", questionIndex);
+      // console.log("Question index:", questionIndex);
 
       if (questionIndex === -1) {
         return next(new ErrorHandler("Question not found", 404));
@@ -1540,7 +1464,7 @@ export const deleteAnswer = CatchAsyncErrror(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { courseId, contentId, questionId, answerId } = req.body;
-      console.log(courseId, contentId, questionId, answerId )
+      // console.log(courseId, contentId, questionId, answerId)
 
       // Step 1: Fetch course by ID
       const course = await CourseModel.findById(courseId);
@@ -1549,7 +1473,7 @@ export const deleteAnswer = CatchAsyncErrror(
       }
 
       // Step 2: Locate the content inside the course
-      const courseContent = course?.courseData?.find((item: any) => 
+      const courseContent = course?.courseData?.find((item: any) =>
         item._id.toString() === contentId.toString()
       );
 
@@ -1574,7 +1498,7 @@ export const deleteAnswer = CatchAsyncErrror(
       if (answerIndex === -1) {
         return next(new ErrorHandler("Answer not found", 404));
       }
-      console.log(answerIndex)
+      // console.log(answerIndex)
 
       // Step 5: Authorization - Ensure only the owner, teacher, or admin can delete
       const answerOwner = (question.questionReplies[answerIndex].user as { _id: string })._id.toString();

@@ -338,7 +338,7 @@ export const updateAccessToken = CatchAsyncErrror(
       }
 
       const user = JSON.parse(session);
-      console.log(user)
+      // console.log(user)
 
       // Generate new tokens
       const accessToken = jwt.sign(
@@ -381,7 +381,7 @@ export const getUserInfo = CatchAsyncErrror(
 
       // Fetch user data (this should not send a response)
       const user = await getUserById(userId); // Assuming this function returns user data instead of sending a response
-      console.log(user)
+      // console.log(user)
       // Send the response with user info
       return res.status(200).json({
         success: true,
@@ -574,7 +574,7 @@ export const changeForgotPassword = CatchAsyncErrror(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { userId } = req.body;
-      console.log(userId);
+      // console.log(userId);
 
       // // Find the user and include the password field
       const user: any = await userModel.findById(userId).select("+password");
@@ -585,7 +585,7 @@ export const changeForgotPassword = CatchAsyncErrror(
       }
 
       const newPassword = generateRandomPassword(8);
-      console.log(newPassword);
+      // console.log(newPassword);
       // Update the password
       user.password = newPassword;
       await user.save();

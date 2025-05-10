@@ -10,7 +10,7 @@ import cloudinary from "cloudinary";
 export const uploadQuestion = CatchAsyncErrror(async (req: Request, res: Response, next: NextFunction) => {
     try {
         const data = req.body;
-        console.log(data)
+        // console.log(data)
 
         
         if (!data.courseId) {
@@ -51,7 +51,7 @@ export const uploadQuestion = CatchAsyncErrror(async (req: Request, res: Respons
             }
         }
         const question = await QuestionBank.create(data);
-        console.log(question)
+        // console.log(question)
 
         res.status(201).json({
             success: true,
