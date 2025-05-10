@@ -7,7 +7,7 @@
     "dev": "ts-node-dev --respawn --transpile-only server.ts",
     "build": "tsc && npm run copy-mails",
     "start": "node dist/server.js",
-    "copy-mails": "cp -r ./mails ./dist/mails"
+    "copy-mails": "cp-cli ./mails ./dist/mails -r"
   },
   "author": "",
   "license": "ISC",
@@ -39,11 +39,14 @@
     "nodemailer": "^6.9.16",
     "rate-limit-redis": "^4.2.0",
     "razorpay": "^2.9.5",
-    "socket.io": "^4.8.1"
+    "socket.io": "^4.8.1",
+    "uuid": "^11.1.0"
   },
   "devDependencies": {
     "@types/ejs": "^3.1.5",
+    "@types/morgan": "^1.9.9",
     "@types/nodemailer": "^6.4.17",
+    "cp-cli": "^2.0.0",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.6.2"
   }

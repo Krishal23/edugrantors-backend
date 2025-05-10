@@ -2,11 +2,11 @@ import { NextFunction, Request, Response } from "express";
 import { CatchAsyncErrror } from "../middleware/catchAsyncError";
 import ErrorHandler from "../utils/ErrorHandler";
 import cloudinary from "cloudinary";
-import { createCourse, getAlCoursesService } from "../services/course.service";
-import CourseModel, { ICoupons, IQuestion } from "../models/course.models";
+import { createCourse } from "../services/course.service";
+import CourseModel from "../models/course.models";
 import { redis } from "../utils/redis";
 import mongoose from "mongoose";
-import ejs, { Template } from "ejs";
+import ejs from "ejs";
 import path from "path";
 import sendMail from "../utils/sendMail";
 import userModel, { IQuizProgress } from "../models/user.model";
@@ -16,12 +16,11 @@ import { IQuiz, IQuestion as IQuizQuestion } from "../models/quiz.model";
 //upload course
 export const uploadCourse = CatchAsyncErrror(
   async (req: Request, res: Response, next: NextFunction) => {
-    // console.log("hello");
     try {
       const data = req.body;
       const userId = req.user?._id;
       data.teacher = userId;
-      data.studentsEnrolled = data.studentsEnrolled || []; // Initialize if undefined
+      data.studentsEnrolled = data.studentsEnrolled || [];
       data.studentsEnrolled.push(userId);
       data.purchased = (data.purchased || 0) + 1;
 
@@ -62,7 +61,7 @@ export const editCourse = CatchAsyncErrror(
         ? courseDataPlain.courseData.map((section, index) => ({
           ...section,
           ...(data.courseData?.[index] || {}),
-          questions: section.questions || [], // Ensure questions remain unchanged
+          questions: section.questions || [],
         }))
         : courseDataPlain.courseData;
 
@@ -127,7 +126,7 @@ export const updateCourse = CatchAsyncErrror(
       await course.save({ session });
 
       try {
-        await redis.set(id, JSON.stringify(course), "EX", 604800); // 7 days cache
+        await redis.set(id!, JSON.stringify(course), "EX", 604800); // 7 days cache
       } catch (cacheError) {
         console.error("Cache update failed:", cacheError);
         // Continue even if cache fails
@@ -141,7 +140,11 @@ export const updateCourse = CatchAsyncErrror(
       });
     } catch (error) {
       await session.abortTransaction();
-      return next(new ErrorHandler(error.message, 500));
+      if (error instanceof Error) {
+        return next(new ErrorHandler(error.message, 500));
+      } else {
+        return next(new ErrorHandler('An unknown error occurred', 500));
+      }
     } finally {
       session.endSession();
     }
@@ -153,7 +156,7 @@ export const addCoupons = CatchAsyncErrror(
     try {
       const {
         code: couponId,
-        couponHolder,
+        // couponHolder,
         maxAllowed,
         discount,
         validity,
@@ -416,12 +419,12 @@ export const updateQuiz = CatchAsyncErrror(
 
       const quiz = courseData.quizzes[quizIndex];
 
-      if (title) quiz.title = title;
-      if (description) quiz.description = description;
-      if (duration) quiz.duration = duration;
-      if (startTime) quiz.startTime = startTime;
-      if (maxMarks) quiz.maxMarks = maxMarks;
-      quiz.isLive = isLive;
+      if (title) quiz!.title = title;
+      if (description) quiz!.description = description;
+      if (duration) quiz!.duration = duration;
+      if (startTime) quiz!.startTime = startTime;
+      if (maxMarks) quiz!.maxMarks = maxMarks;
+      quiz!.isLive = isLive;
 
       if (questions && Array.isArray(questions)) {
         const processedQuestions = await Promise.all(
@@ -458,8 +461,8 @@ export const updateQuiz = CatchAsyncErrror(
         );
 
         // Replace the existing questions with the updated ones
-        quiz.questions = processedQuestions;
-        quiz.maxMarks = processedQuestions.reduce(
+        quiz!.questions = processedQuestions;
+        quiz!.maxMarks = processedQuestions.reduce(
           (total: number, question: any) => total + (question.marks || 0),
           0
         );
@@ -502,20 +505,20 @@ export const deleteQuestion = CatchAsyncErrror(
       const quiz = courseData.quizzes[quizIndex];
 
       // Find the question in the quiz
-      const questionIndex = quiz.questions.findIndex(
+      const questionIndex = quiz!.questions.findIndex(
         (question: any) => question._id.toString() === questionId
       );
       if (questionIndex === -1) {
         return next(new ErrorHandler("Question not found", 404));
       }
       // Get the marks of the question to be deleted
-      const questionMarks = quiz.questions[questionIndex]?.marks || 0;
+      const questionMarks = quiz!.questions[questionIndex]?.marks || 0;
 
       // Reduce the maxMarks by the marks of the deleted question
-      quiz.maxMarks = Math.max(0, quiz.maxMarks - questionMarks);
+      quiz!.maxMarks = Math.max(0, quiz!.maxMarks - questionMarks);
 
       // Remove the question
-      quiz.questions.splice(questionIndex, 1);
+      quiz!.questions.splice(questionIndex, 1);
 
       // Save the updated course document
       await courseData.save();
@@ -953,7 +956,7 @@ export const reviewQuizAttempt = CatchAsyncErrror(
           marks: isCorrect ? question.marks : 0,
           negativeMarks: isCorrect ? 0 : question.negativeMarks,
           image: question.image,
-          imageExplain:question.imageExplain,
+          imageExplain: question.imageExplain,
         };
       });
 
@@ -1044,7 +1047,7 @@ export const getSingleCourseAdmin = CatchAsyncErrror(
       }
 
       // Cache the course in Redis for 1 hour
-      await redis.set(courseId, JSON.stringify(course), "EX", 604800); // Cache for 7Days
+      await redis.set(courseId!, JSON.stringify(course), "EX", 604800); // Cache for 7Days
 
       // Return the fetched course details
       return res.status(200).json({
@@ -1126,7 +1129,7 @@ export const getUserQuizMarksAdmin = CatchAsyncErrror(
 
 //get all courses --without purchasing
 export const getAllCourses = CatchAsyncErrror(
-  async (req: Request, res: Response, next: NextFunction) => {
+  async (_req: Request, res: Response, next: NextFunction) => {
     try {
       const courses = await CourseModel.find({ isPublic: true }).select(
         "-courseData.videoUrl -courseData.suggestion -courseData.questions -courseData.links"
@@ -1151,7 +1154,7 @@ export const getAllCourses = CatchAsyncErrror(
 
 //get all courses --without purchasing
 export const getAllCoursesName = CatchAsyncErrror(
-  async (req: Request, res: Response, next: NextFunction) => {
+  async (_req: Request, res: Response, next: NextFunction) => {
     try {
       // Fetch only name and id fields from MongoDB
       const courses = await CourseModel.find({}, { name: 1, _id: 1 });
@@ -1198,7 +1201,7 @@ export const getCourseByUser = CatchAsyncErrror(
 
       // Check if course exists in user's courses
       const courseExists = userCourseList?.find(
-        (course: any) => course.courseId.toString() === courseId.toString()
+        (course: any) => course.courseId.toString() === courseId!.toString()
       );
 
       if (!courseExists) {
@@ -1256,7 +1259,7 @@ export const addQuestion = CatchAsyncErrror(
 
       //add this question to our course content
       courseContent?.questions.push(newQuestion);
-      const notification = await NotificationModel.create({
+      await NotificationModel.create({
         userId: req.user?._id,
         title: "New Question Recieved",
         message: `You have new question in ${courseContent.title} of ${course?.name}`,
@@ -1334,7 +1337,7 @@ export const addAnswer = CatchAsyncErrror(
       // Step 8: Notification logic
       if (req.user?._id === user._id) {
         // Create a notification for the admin if the user replying is the same as the one who asked the question
-        const notification = await NotificationModel.create({
+        await NotificationModel.create({
           userId: req.user?._id,
           title: "New Question Reply Recieved",
           message: `You have new question reply recieved in ${courseContent.title} of ${course?.name}`,
@@ -1353,7 +1356,7 @@ export const addAnswer = CatchAsyncErrror(
           title: courseContent.title,
         };
 
-        const html = await ejs.renderFile(
+        await ejs.renderFile(
           path.join(__dirname, "../mails/question-reply.ejs"),
           data
         );
@@ -1501,7 +1504,7 @@ export const deleteAnswer = CatchAsyncErrror(
       // console.log(answerIndex)
 
       // Step 5: Authorization - Ensure only the owner, teacher, or admin can delete
-      const answerOwner = (question.questionReplies[answerIndex].user as { _id: string })._id.toString();
+      const answerOwner = (question!.questionReplies[answerIndex]!.user as { _id: string })._id.toString();
       const isOwner = answerOwner === (req.user as { _id: string })?._id.toString();
       const isAdminOrTeacher = req.user?.role === "admin" || req.user?.role === "teacher";
 
@@ -1545,7 +1548,7 @@ export const addReview = CatchAsyncErrror(
 
       // Check if courseId exists in user course list
       const courseExists = userCourseList?.some((course: any) => {
-        return course._id.toString() === courseId.toString(); // Convert both to strings for comparison
+        return course._id.toString() === courseId!.toString(); // Convert both to strings for comparison
       });
 
       if (!courseExists) {
@@ -1573,10 +1576,10 @@ export const addReview = CatchAsyncErrror(
 
       await course?.save();
 
-      const notification = {
-        title: "New Review Recieved",
-        message: `You have a new review from ${req.user?.name} on ${course?.name}`,
-      };
+      // const notification = {
+      //   title: "New Review Recieved",
+      //   message: `You have a new review from ${req.user?.name} on ${course?.name}`,
+      // };
 
       //create notification by notification model
 
@@ -1714,7 +1717,9 @@ export const deleteCourse = CatchAsyncErrror(
         return next(new ErrorHandler("Course not found", 404));
       }
       await course?.deleteOne({ id });
-      await redis.del(id);
+      if (id !== undefined) {
+        await redis.del(id);
+      };
       res.status(200).json({
         status: "success",
         message: " Course removed successfully",
@@ -1745,7 +1750,7 @@ export const toggleCoursePublic = CatchAsyncErrror(
       await course.save();
 
       // Optionally clear cached data for the course in Redis
-      await redis.del(id);
+      await redis.del(id!);
 
       // Respond with the updated course state
       res.status(200).json({

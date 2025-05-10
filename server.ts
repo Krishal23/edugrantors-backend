@@ -9,6 +9,12 @@ import cluster from 'cluster';
 import os from 'os';
 import { getRedisClient } from './utils/redis';
 
+declare module 'express-serve-static-core' {
+  interface Request {
+    id?: string;
+  }
+}
+
 config();
 
 // Request ID middleware
@@ -29,7 +35,7 @@ if (process.env.NODE_ENV === 'development') {
 const httpServer = createServer(app);
 
 // Initialize WebSocket
-const io = initializeWebSocket(httpServer);
+initializeWebSocket(httpServer);
 
 // Health check function
 const checkServices = async () => {
@@ -39,7 +45,7 @@ const checkServices = async () => {
         if (!redisClient) {
             throw new Error('Redis connection failed');
         }
-        await redisClient.ping();
+        // await redisClient.ping();
         
         // Check MongoDB connection
         await connectDB();

@@ -2,7 +2,7 @@ import express from "express";
 import { authorizeRoles, isAuthenticated } from "../middleware/auth";
 import { createOrder, createRazorpayOrder, fetchPaymentID, getAllOrders, verifyPayment } from "../controllers/order.controller";
 import { updateAccessToken } from "../controllers/user.controller";
-import Razorpay from "razorpay";
+// import Razorpay from "razorpay";
 
 
 const orderRouter = express.Router();

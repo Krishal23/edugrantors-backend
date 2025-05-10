@@ -143,7 +143,7 @@ export const deleteQuestion = CatchAsyncErrror(async (req: Request, res: Respons
 
 
 // Get all questions
-export const getAllQuestions = CatchAsyncErrror(async (req: Request, res: Response, next: NextFunction) => {
+export const getAllQuestions = CatchAsyncErrror(async (_req: Request, res: Response, next: NextFunction) => {
     try {
         const questions = await QuestionBank.find().populate("createdBy", "name email");
         res.status(200).json({

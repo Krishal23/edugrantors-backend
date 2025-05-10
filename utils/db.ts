@@ -15,7 +15,7 @@ const connectDB = async (): Promise<void> => {
         }
 
         // Connect to MongoDB
-        const data = await mongoose.connect(dbUrl);
+        await mongoose.connect(dbUrl);
 
 
     } catch (error: any) {

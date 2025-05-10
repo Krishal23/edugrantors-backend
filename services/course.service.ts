@@ -28,7 +28,7 @@ export const createCourse =CatchAsyncErrror(async(data:any, res:Response )=>{
           
         await teacher.save();
     }
-    res.status(201).json({
+    return res.status(201).json({
         success: true,
         course,
     });

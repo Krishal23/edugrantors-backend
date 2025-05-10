@@ -80,7 +80,7 @@ export const registerUser = CatchAsyncErrror(
         activationCode: activationCode,
       };
 
-      const html = await ejs.renderFile(
+      await ejs.renderFile(
         path.join(__dirname, "../mails/activation-mail.ejs"),
         data
       );
@@ -142,7 +142,7 @@ export const sendOTPVerifyMail = CatchAsyncErrror(
       otp,
     };
 
-    const html = await ejs.renderFile(
+    await ejs.renderFile(
       path.join(__dirname, "../mails/verify-mail.ejs"),
       data
     );
@@ -166,7 +166,7 @@ export const sendOTPVerifyMail = CatchAsyncErrror(
 );
 
 export const verifyOTPVerifyMail = CatchAsyncErrror(
-  async (req: Request, res: Response, next: NextFunction) => {
+  async (_req: Request, res: Response, _next: NextFunction) => {
     console.log("verifying mail");
 
     res.status(201).json({
@@ -641,9 +641,9 @@ const generateRandomPassword = (length: number): string => {
 };
 
 //update profilepicture
-interface IUpdateProfilePicture {
-  avatar: string;
-}
+// interface IUpdateProfilePicture {
+//   avatar: string;
+// }
 
 export const updateProfilePicture = CatchAsyncErrror(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -690,7 +690,7 @@ export const updateProfilePicture = CatchAsyncErrror(
 
 //get all users --only for admin
 export const getAllUsers = CatchAsyncErrror(
-  async (req: Request, res: Response, next: NextFunction) => {
+  async (_req: Request, res: Response, next: NextFunction) => {
     try {
       getAllUserService(res);
     } catch (error: any) {
@@ -773,7 +773,7 @@ export const deleteUser = CatchAsyncErrror(
         return next(new ErrorHandler("User not found", 404));
       }
       await user?.deleteOne({ id });
-      await redis.del(id);
+      await redis.del(id!);
       res.status(200).json({
         status: "success",
         message: " User removed successfully",

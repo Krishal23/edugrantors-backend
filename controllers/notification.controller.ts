@@ -5,7 +5,7 @@ import ErrorHandler from "../utils/ErrorHandler";
 import cron from "node-cron";
 
 //get notifications --only for admin
-export const getNotification = CatchAsyncErrror(async (req: Request, res: Response, next: NextFunction) => {
+export const getNotification = CatchAsyncErrror(async (_req: Request, res: Response, next: NextFunction) => {
     try {
         const notifications = await NotificationModel.find().sort({ createdAt: -1 });
         res.status(200).json({

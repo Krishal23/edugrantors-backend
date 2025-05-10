@@ -1,4 +1,4 @@
-import { Mode } from "fs";
+// import { Mode } from "fs";
 import mongoose, { Document, Schema, Model } from "mongoose";
 
 export interface INotfication extends Document {

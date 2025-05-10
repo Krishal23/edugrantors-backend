@@ -1,4 +1,4 @@
-import { Model, Schema, Document, model } from "mongoose";
+import { Schema, Document, model } from "mongoose";
 
 interface FaqItem extends Document {
     question: string;

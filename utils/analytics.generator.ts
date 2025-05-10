@@ -1,9 +1,5 @@
 import { Document, Model } from "mongoose";
 
-interface MonthData {
-    month: string;
-    count: number;
-}
 export async function generateLast12MonthData<T extends Document>(
     model: Model<T>
 ): Promise<{ last12Months: { month: string; count: number }[] }> {

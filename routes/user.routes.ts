@@ -1,4 +1,4 @@
-import express, { Request, Response, Router } from 'express';
+import express from 'express';
 import { activateUser, changeForgotPassword, deleteUser, getAllUsers, getEnrolledCourses, getEnrolledUsers, getUserInfo, getUserInfoAdmin, loginUser, logoutUser, registerUser, sendOTPVerifyMail, socialAuth, unEnrollUser, updateAccessToken, updatePassword, updateProfilePicture, updateUserInfo, updateUserRole, userExist } from '../controllers/user.controller';
 import { authorizeRoles, isAuthenticated } from '../middleware/auth';
 

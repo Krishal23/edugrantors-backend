@@ -3,7 +3,7 @@ import { CatchAsyncErrror } from "../middleware/catchAsyncError";
 import OrderModel from "../models/orderModel";
 
 //create new order
-export const newOrder = CatchAsyncErrror(async (req: Request, res: Response, next: NextFunction) => {
+export const newOrder = CatchAsyncErrror(async (req: Request, res: Response, _next: NextFunction) => {
     const order  = await OrderModel.create(req.body);
     // next( order);
     res.status(201).json({

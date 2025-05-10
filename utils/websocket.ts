@@ -28,7 +28,7 @@ export function initializeWebSocket(httpServer: HttpServer) {
             socket.join(userId);
             
             // Subscribe to user's notification channel
-            const notificationChannel = `notifications:${userId}`;
+            // const notificationChannel = `notifications:${userId}`;
             await redis.set(`socket:${userId}`, socket.id, 'EX', 3600); // 1 hour expiry
         });
 

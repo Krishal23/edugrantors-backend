@@ -32,7 +32,7 @@ import {
 } from "../controllers/course.controller";
 import { authorizeRoles, isAuthenticated } from "../middleware/auth";
 import { updateAccessToken } from "../controllers/user.controller";
-import { uploadQuestion } from "../controllers/questionBank.controller";
+// import { uploadQuestion } from "../controllers/questionBank.controller";
 const courseRouter = express.Router();
 
 courseRouter.post(

@@ -17,7 +17,7 @@ class MemoryCache {
         return item.value;
     }
 
-    async set(key: string, value: string, expireFlag?: string, expireValue?: number): Promise<boolean> {
+    async set(key: string, value: string, _expireFlag?: string, expireValue?: number): Promise<boolean> {
         try {
             const expires = expireValue ? Date.now() + (expireValue * 1000) : undefined;
             this.cache.set(key, { value, expires });

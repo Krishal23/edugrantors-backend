@@ -1,5 +1,4 @@
 import Queue from 'bull';
-import { Redis } from 'ioredis';
 
 // Queue configuration
 const redisConfig = {
@@ -15,7 +14,6 @@ const redisConfig = {
 };
 
 const createQueue = (name: string) => {
-    // If Redis is disabled in development, return a mock queue
     if (process.env.NODE_ENV === 'development' && process.env.REDIS_DISABLED === 'true') {
         return {
             add: async () => Promise.resolve(),

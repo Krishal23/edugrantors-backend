@@ -2,16 +2,16 @@ import { NextFunction, Request, Response } from "express";
 import { CatchAsyncErrror } from "../middleware/catchAsyncError";
 import ErrorHandler from "../utils/ErrorHandler";
 import OrderModel, { IOrder } from "../models/orderModel";
-import userModel from "../models/user.model";
+import userModel, { IUser } from "../models/user.model";
 import CourseModel from "../models/course.models";
-import path from "path";
-import ejs from "ejs";
+// import path from "path";
+// import ejs from "ejs";
 import sendMail from "../utils/sendMail";
 import NotificationModel from "../models/notificationModel";
-import { getAllOrderService, newOrder } from "../services/order.service";
+import { getAllOrderService } from "../services/order.service";
 import Razorpay from "razorpay"
 import { redis } from "../utils/redis";
-import orderRouter from "../routes/order.route";
+// import orderRouter from "../routes/order.route";
 import crypto from "crypto";
 import mongoose from 'mongoose';
 
@@ -21,7 +21,7 @@ const razorpay = new Razorpay({
     key_secret: process.env.RAZORPAY_KEY_SECRET!,
 });
 
-export const hello = CatchAsyncErrror(async (req: Request, res: Response, next: NextFunction) => {
+export const hello = CatchAsyncErrror(async (_req: Request, res: Response, _next: NextFunction) => {
     res.status(201).json({
         success: true,
 
@@ -130,7 +130,7 @@ export const createOrder = CatchAsyncErrror(async (req: Request, res: Response, 
             }
 
             coupon.count += 1;
-            coupon.beneficiary.push(userId);
+            coupon!.beneficiary!.push(userId as IUser);
         }
 
         const orderData = {
@@ -139,21 +139,21 @@ export const createOrder = CatchAsyncErrror(async (req: Request, res: Response, 
             payment_info
         };
 
-        const order = await OrderModel.create([orderData], { session });
+        await OrderModel.create([orderData], { session });
 
         course.purchased = (course.purchased || 0) + 1;
-        course.studentsEnrolled.push(user._id);
+        course.studentsEnrolled.push(user._id as IUser);
         await course.save({ session });
 
         user.courses.push({
-            courseId: course._id,
+            courseId: course._id as string,
             courseName
         });
 
         await user.save({ session });
 
         try {
-            await redis.set(userId, JSON.stringify(user));
+            await redis.set(userId as string, JSON.stringify(user));
         } catch (cacheError) {
             console.error("Cache update failed:", cacheError);
             // Continue execution even if cache fails
@@ -162,7 +162,7 @@ export const createOrder = CatchAsyncErrror(async (req: Request, res: Response, 
         try {
             const mailData = {
                 order: {
-                    _id: course._id.toString().slice(0, 6),
+                    _id: (course._id as mongoose.Types.ObjectId).toString().slice(0, 6),
                     name: course.name,
                     price: course.price,
                     date: new Date().toLocaleDateString('en-US', {
@@ -270,7 +270,7 @@ export const newPayment = CatchAsyncErrror(async (req: Request, res: Response, n
     }
 })
 
-export const fetchPaymentID = CatchAsyncErrror(async (req: Request, res: Response, next: NextFunction) => {
+export const fetchPaymentID = CatchAsyncErrror(async (req: Request, res: Response, _next: NextFunction) => {
 
     const { paymentId } = req.params;
     const razorpay = new Razorpay({
@@ -278,11 +278,11 @@ export const fetchPaymentID = CatchAsyncErrror(async (req: Request, res: Respons
         key_secret: process.env.RAZORPAY_KEY_SECRET!,
     })
     try {
-        const payment = await razorpay.payments.fetch(paymentId);
+        const payment = await razorpay.payments.fetch(paymentId as string);
         if (!payment) {
             return res.status(500).json("Error at razrpay loading")
         }
-        res.json({
+        return res.json({
             status: payment.status,
             method: payment.method,
             amount: payment.amount,
@@ -327,7 +327,7 @@ export const createOrder2 = CatchAsyncErrror(async (req: Request, res: Response,
         };
 
         //  newOrder(orderData, res,next);
-        const order = await OrderModel.create(orderData);
+        await OrderModel.create(orderData);
         // Increment the course's purchase count
         course.purchased = (course.purchased || 0) + 1;
         course.studentsEnrolled.push(user._id);
@@ -385,7 +385,7 @@ export const createOrder2 = CatchAsyncErrror(async (req: Request, res: Response,
 
 
 //get all orders --only for admin
-export const getAllOrders = CatchAsyncErrror(async (req: Request, res: Response, next: NextFunction) => {
+export const getAllOrders = CatchAsyncErrror(async (_req: Request, res: Response, next: NextFunction) => {
     try {
         getAllOrderService(res)
     } catch (error: any) {
@@ -395,7 +395,7 @@ export const getAllOrders = CatchAsyncErrror(async (req: Request, res: Response,
 
 
 // sent stripe publishble key
-export const sendRazorpayPublishableKey = CatchAsyncErrror(async (req: Request, res: Response) => {
+export const sendRazorpayPublishableKey = CatchAsyncErrror(async (_req: Request, res: Response) => {
     res.status(200).json({
         key_id: process.env.RAZORPAY_KEY_ID!,
     })

@@ -4,7 +4,7 @@ import ErrorHandler from "../utils/ErrorHandler";
 
 
 //create quiz
-export const createQuiz = CatchAsyncErrror(async (req: Request, res: Response, next: NextFunction) => {
+export const createQuiz = CatchAsyncErrror(async (_req: Request, res: Response, next: NextFunction) => {
     try {
     
         res.status(201).json({

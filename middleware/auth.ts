@@ -24,7 +24,7 @@ export const isAuthenticated = CatchAsyncErrror(async (req: Request, res: Respon
 
         // First try to verify access token
         try {
-            const decoded = jwt.verify(accessToken, process.env.ACCESS_TOKEN as string) as JwtPayload;
+            const decoded = jwt.verify(accessToken, process.env.ACCESS_TOKEN as string) as JwtPayload & { id: string };
             const user = await redis.get(decoded.id);
 
             if (!user) {
@@ -40,7 +40,7 @@ export const isAuthenticated = CatchAsyncErrror(async (req: Request, res: Respon
             }
 
             try {
-                const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN as string) as JwtPayload;
+                const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN as string) as JwtPayload & { id: string };
                 
                 // Get user from cache or DB
                 let user = await redis.get(decoded.id);
@@ -80,7 +80,7 @@ export const isAuthenticated = CatchAsyncErrror(async (req: Request, res: Respon
 // Validate user role
 export const authorizeRoles = (...roles: string[]) => {
     
-    return async (req: Request, res: Response, next: NextFunction) => {
+    return async (req: Request, _res: Response, next: NextFunction) => {
         const user = await userModel.findById(req.user?._id).select("role");;
         if (user?.role === 'admin') {
             return next(); // Admin is always authorized

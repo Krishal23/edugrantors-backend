@@ -1,8 +1,8 @@
 import rateLimit from 'express-rate-limit';
-import RedisStore from 'rate-limit-redis';
+import { RedisStore, type RedisReply } from 'rate-limit-redis'; 
 import { Redis } from 'ioredis';
-import { config } from 'dotenv';
-config();
+import { config as dotenvConfig } from 'dotenv'; 
+dotenvConfig();
 
 // Create Redis client for rate limiting
 const redisClient = new Redis({
@@ -13,9 +13,9 @@ const redisClient = new Redis({
     maxRetriesPerRequest: 3,
     retryStrategy(times) {
         if (times > 3) {
-            return null; // Stop retrying after 3 attempts
+            return null; 
         }
-        return Math.min(times * 100, 3000); // Exponential backoff
+        return Math.min(times * 100, 3000);
     }
 });
 
@@ -23,28 +23,28 @@ redisClient.on('error', (err) => {
     console.error('Rate Limiter Redis Error:', err);
 });
 
-// Create memory store fallback for development
-const createRateLimiter = () => {
-    const config = {
-        windowMs: 15 * 60 * 1000, // 15 minutes
-        max: 250, // Increased limit
-        message: 'Too many requests from this IP, please try again later',
-        standardHeaders: true,
-        legacyHeaders: false,
-        skip: (req) => req.url.includes('/get-courses') || req.user?.role === 'admin', // Skip rate limiting for courses endpoint and admin users
-        skipFailedRequests: true // Don't count failed requests
-    };
+const rateLimitConfig = {
+    windowMs: 15 * 60 * 1000, 
+    max: 250, 
+    message: 'Too many requests from this IP, please try again later',
+    standardHeaders: true,
+    legacyHeaders: false,
+    skip: (req:any) => req.url.includes('/get-courses') || req.user?.role === 'admin', 
+    skipFailedRequests: true 
+};
 
+const createRateLimiter = () => {
     if (process.env.NODE_ENV === 'development') {
-        return rateLimit(config);
+        return rateLimit(rateLimitConfig);
     }
 
     return rateLimit({
-        ...config,
+        ...rateLimitConfig,
         store: new RedisStore({
-            sendCommand: (...args: any[]) => redisClient.call(...args),
-            prefix: 'rl:',
-            client: redisClient as any
+            sendCommand: async (command: string, ...args: string[]): Promise<RedisReply> => {
+                return redisClient.call(command, ...args) as Promise<RedisReply>;
+            },
+            prefix: 'rate-limiter:', 
         })
     });
 };

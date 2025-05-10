@@ -10,14 +10,19 @@ export class DistributedLock {
     }
 
     async acquire(): Promise<boolean> {
-        const redis = getRedisClient();
+        const redis = await getRedisClient(); 
+        if (!redis) return false;
+
         // NX = Only set if key doesn't exist; EX = Set expiry in seconds
-        const result = await redis.set(this.lockKey, '1', 'NX', 'EX', this.ttl);
+        const result = await redis.set(this.lockKey, '1', 'EX', this.ttl);
+        
         return result === 'OK';
     }
 
     async release(): Promise<void> {
-        const redis = getRedisClient();
+        const redis = await getRedisClient(); 
+        if (!redis) return;
+
         await redis.del(this.lockKey);
     }
 
@@ -27,7 +32,7 @@ export class DistributedLock {
         ttlSeconds: number = 30
     ): Promise<T> {
         const lock = new DistributedLock(resourceId, ttlSeconds);
-        
+
         if (!await lock.acquire()) {
             throw new Error('Failed to acquire lock. Resource is busy.');
         }

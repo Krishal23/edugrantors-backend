@@ -7,7 +7,7 @@ import CourseModel from "../models/course.models";
 import OrderModel from "../models/orderModel";
 
 //get users analytics --only for admins
-export const getUserAnalytics = CatchAsyncErrror(async (req: Request, res: Response, next: NextFunction) => {
+export const getUserAnalytics = CatchAsyncErrror(async (_req: Request, res: Response, next: NextFunction) => {
     try {
         const user = await generateLast12MonthData(userModel);
         res.status(200).json({
@@ -21,7 +21,7 @@ export const getUserAnalytics = CatchAsyncErrror(async (req: Request, res: Respo
 });
 
 //get courses analytics --only for admins
-export const getCoursesAnalytics = CatchAsyncErrror(async (req: Request, res: Response, next: NextFunction) => {
+export const getCoursesAnalytics = CatchAsyncErrror(async (_req: Request, res: Response, next: NextFunction) => {
     try {
         const courses = await generateLast12MonthData(CourseModel);
         res.status(200).json({
@@ -34,7 +34,7 @@ export const getCoursesAnalytics = CatchAsyncErrror(async (req: Request, res: Re
 
 });
 //get orders analytics --only for admins
-export const getOrderAnalytics = CatchAsyncErrror(async (req: Request, res: Response, next: NextFunction) => {
+export const getOrderAnalytics = CatchAsyncErrror(async (_req: Request, res: Response, next: NextFunction) => {
     try {
         const orders = await generateLast12MonthData(OrderModel);
         res.status(200).json({
