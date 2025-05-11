@@ -9,8 +9,9 @@ const redisClient = new Redis({
     host: process.env.REDIS_HOST || 'localhost',
     port: parseInt(process.env.REDIS_PORT || '6379'),
     password: process.env.REDIS_PASSWORD,
-    enableOfflineQueue: false,
+    enableOfflineQueue: true,
     maxRetriesPerRequest: 3,
+    lazyConnect: true,
     retryStrategy(times) {
         if (times > 3) {
             return null; 
@@ -18,6 +19,16 @@ const redisClient = new Redis({
         return Math.min(times * 100, 3000);
     }
 });
+
+(async () => {
+    try {
+        await redisClient.connect();
+        console.log('Redis connected successfully');
+    } catch (error) {
+        console.error('Failed to connect to Redis:', error);
+    }
+})();
+
 
 redisClient.on('error', (err) => {
     console.error('Rate Limiter Redis Error:', err);

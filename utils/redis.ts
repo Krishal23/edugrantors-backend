@@ -23,11 +23,13 @@ const createRedisClient = () => {
         },
         maxRetriesPerRequest: 5,
         enableOfflineQueue: true,
+        connectTimeout: 10000,
+
         reconnectOnError: (err) => {
             const targetError = 'READONLY';
             return err.message.includes(targetError);
         },
-        lazyConnect: false // Changed to false to connect immediately
+        lazyConnect: true 
     });
 
     client.on('error', (err) => {
