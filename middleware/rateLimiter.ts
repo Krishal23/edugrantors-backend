@@ -1,63 +1,100 @@
 import rateLimit from 'express-rate-limit';
-import { RedisStore, type RedisReply } from 'rate-limit-redis'; 
-import { Redis } from 'ioredis';
-import { config as dotenvConfig } from 'dotenv'; 
-dotenvConfig();
+import { RedisStore, type RedisReply } from 'rate-limit-redis';
+import { config } from 'dotenv';
+import { getRedisClient } from '../utils/redis';
+config();
 
-// Create Redis client for rate limiting
-const redisClient = new Redis({
-    host: process.env.REDIS_HOST || 'localhost',
-    port: parseInt(process.env.REDIS_PORT || '6379'),
-    password: process.env.REDIS_PASSWORD,
-    enableOfflineQueue: true,
-    maxRetriesPerRequest: 3,
-    lazyConnect: true,
-    retryStrategy(times) {
-        if (times > 3) {
-            return null; 
+// Define environment-specific rate limit configurations
+const getRateLimitConfig = () => {
+    const env = process.env.NODE_ENV || 'development';
+    
+    const configs:any = {
+        development: {
+            windowMs: 15 * 60 * 1000, 
+            max: 500, 
+            message: 'Too many requests from this IP, please try again later',
+            standardHeaders: true,
+            legacyHeaders: false,
+            skip: (req: any) => req.url.includes('/get-courses') || req.user?.role === 'admin',
+            skipFailedRequests: true
+        },
+        staging: {
+            windowMs: 15 * 60 * 1000,
+            max: 300,
+            message: 'Too many requests from this IP, please try again later',
+            standardHeaders: true,
+            legacyHeaders: false,
+            skip: (req: any) => req.url.includes('/get-courses') || req.user?.role === 'admin',
+            skipFailedRequests: true
+        },
+        production: {
+            windowMs: 15 * 60 * 1000,
+            max: 250,
+            message: 'Too many requests from this IP, please try again later',
+            standardHeaders: true,
+            legacyHeaders: false,
+            skip: (req: any) => req.url.includes('/get-courses') || req.user?.role === 'admin',
+            skipFailedRequests: true
         }
-        return Math.min(times * 100, 3000);
+    };
+    
+    return configs[env] || configs.development;
+};
+
+// Initialize rate limiter with fallback
+let rateLimiter: any;
+
+const createRateLimiter = async () => {
+    const config = getRateLimitConfig();
+    
+    // Use in-memory store for development or when Redis is disabled
+    if (process.env.NODE_ENV === 'development' || process.env.REDIS_DISABLED === 'true') {
+        console.log('Using memory store for rate limiting');
+        return rateLimit(config);
     }
-});
+
+    try {
+        const redisClient:any = await getRedisClient();
+        
+        if (!redisClient) {
+            console.log('Redis client not available, using memory store for rate limiting');
+            return rateLimit(config);
+        }
+        
+        await redisClient.ping();
+        
+        // Use Redis store for rate limiting
+        console.log('Using Redis store for rate limiting');
+        return rateLimit({
+            ...config,
+            store: new RedisStore({
+                sendCommand: async (command: string, ...args: string[]): Promise<RedisReply> => {
+                    return redisClient.call(command, ...args) as Promise<RedisReply>;
+                },
+                prefix: 'rate-limiter:',
+            })
+        });
+    } catch (error) {
+        console.error('Error initializing Redis store for rate limiting:', error);
+        console.log('Falling back to memory store for rate limiting');
+        return rateLimit(config);
+    }
+};
 
 (async () => {
     try {
-        await redisClient.connect();
-        console.log('Redis connected successfully');
+        rateLimiter = await createRateLimiter();
+        console.log('Rate limiter initialized successfully');
     } catch (error) {
-        console.error('Failed to connect to Redis:', error);
+        console.error('Failed to initialize rate limiter:', error);
+        rateLimiter = rateLimit(getRateLimitConfig());
     }
 })();
 
-
-redisClient.on('error', (err) => {
-    console.error('Rate Limiter Redis Error:', err);
-});
-
-const rateLimitConfig = {
-    windowMs: 15 * 60 * 1000, 
-    max: 250, 
-    message: 'Too many requests from this IP, please try again later',
-    standardHeaders: true,
-    legacyHeaders: false,
-    skip: (req:any) => req.url.includes('/get-courses') || req.user?.role === 'admin', 
-    skipFailedRequests: true 
-};
-
-const createRateLimiter = () => {
-    if (process.env.NODE_ENV === 'development') {
-        return rateLimit(rateLimitConfig);
+export const getRateLimiter = () => {
+    if (!rateLimiter) {
+        console.warn('Rate limiter not yet initialized, using default in-memory limiter');
+        return rateLimit(getRateLimitConfig());
     }
-
-    return rateLimit({
-        ...rateLimitConfig,
-        store: new RedisStore({
-            sendCommand: async (command: string, ...args: string[]): Promise<RedisReply> => {
-                return redisClient.call(command, ...args) as Promise<RedisReply>;
-            },
-            prefix: 'rate-limiter:', 
-        })
-    });
+    return rateLimiter;
 };
-
-export const rateLimiter = createRateLimiter();

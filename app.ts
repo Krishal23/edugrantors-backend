@@ -6,7 +6,7 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import helmet from "helmet";
 import mongoSanitize from "express-mongo-sanitize";
-import { rateLimiter } from './middleware/rateLimiter';
+import { getRateLimiter } from './middleware/rateLimiter';
 import { ErrorMiddlewares } from "./middleware/error";
 import { typeErrorHandler } from "./middleware/typeError";
 import userRouter from "./routes/user.routes";
@@ -31,7 +31,8 @@ app.use(
 app.use(mongoSanitize());
 
 // Rate limiting
-app.use('/api/', rateLimiter);
+// app.use('/api/', rateLimiter);
+app.use('/api/', getRateLimiter());
 
 // Body parser with size limits
 app.use(express.json({ limit: "50mb" }));

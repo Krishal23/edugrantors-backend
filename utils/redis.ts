@@ -6,7 +6,6 @@ config();
 let redisClient: Redis | null = null;
 
 const createRedisClient = () => {
-    // Don't create Redis client in development if REDIS_DISABLED is true
     if (process.env.NODE_ENV === 'development' && process.env.REDIS_DISABLED === 'true') {
         console.log('Redis disabled in development, using memory cache');
         return null;
@@ -29,7 +28,7 @@ const createRedisClient = () => {
             const targetError = 'READONLY';
             return err.message.includes(targetError);
         },
-        lazyConnect: true 
+        lazyConnect: false 
     });
 
     client.on('error', (err) => {
