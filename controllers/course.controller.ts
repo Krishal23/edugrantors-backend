@@ -880,7 +880,7 @@ export const reviewQuizAttempt = CatchAsyncErrror(
       let userId = req.query.userId;
 
       if (req.query.userId && req.query.userId !== "null" && req.query.userId !== "undefined") {
-        if (req.user?.role === "admin") {
+        if (req.user?.role === "admin" || req.user?.role === "teacher") {
           userId = req.query.userId;
         } else {
           return res.status(403).json({
