@@ -873,15 +873,25 @@ export const attemptQuiz2 = CatchAsyncErrror(
 export const reviewQuizAttempt = CatchAsyncErrror(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const userId = req.user?._id;
+      console.log("reviewQuizAttempt");
       const { cid: courseId, qid: quizId } = req.params;
 
-      // Validate input
-      if (!courseId || !quizId || !userId) {
-        return next(
-          new ErrorHandler("Please provide userId, courseId, and quizId.", 400)
-        );
+      
+      let userId = req.query.userId;
+
+      if (req.query.userId && req.query.userId !== "null" && req.query.userId !== "undefined") {
+        if (req.user?.role === "admin") {
+          userId = req.query.userId;
+        } else {
+          return res.status(403).json({
+            success: false,
+            message: "Only admin users can access another user's quiz review.",
+          });
+        }
+      } else {
+        userId = req.user?._id as string;
       }
+      
 
       // Fetch user data
       const user = await userModel.findById(userId);
@@ -1065,8 +1075,7 @@ export const getSingleCourseAdmin = CatchAsyncErrror(
 export const getUserQuizMarksAdmin = CatchAsyncErrror(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { cid: courseId, qid: quizId } = req.params; // Correctly extract params
-      // console.log(courseId, "rgsd", quizId);
+      const { cid: courseId, qid: quizId } = req.params;
 
       // Fetch the course
       const course = await CourseModel.findById(courseId).select("quizzes");
@@ -1074,26 +1083,21 @@ export const getUserQuizMarksAdmin = CatchAsyncErrror(
         return next(new ErrorHandler("Course not found", 404));
       }
 
-      // console.log(course, "cours/e");
 
       // Find the quiz in the course
       const quiz = course.quizzes.find((q: any) => q._id.toString() === quizId);
+      // console.log(quiz, "quiz");
       if (!quiz) {
         return next(new ErrorHandler("Quiz not found in the course", 404));
       }
-      // console.log(quiz.attemptedBy, "quiz");
 
-      // Extract user IDs who attempted the quiz
-      // Extract user IDs who attempted the quiz
       const userIds = (quiz?.attemptedBy ?? [])
-        .filter((attempt: any) => attempt?._id) // Use `_id` instead of `userId`
-        .map((attempt: any) => attempt._id);    // Map `_id` instead of `userId`
-      // console.log(userIds, "userId");
+        .filter((attempt: any) => attempt?._id)
+        .map((attempt: any) => attempt._id);
+      console.log(userIds, "userIds");
 
-      // Fetch users who attempted the quiz and get their quiz progress
       const users = await userModel.find({ _id: { $in: userIds } }).select("name quizProgress");
       console.log(users, "users");
-      // Filter user progress for this quiz and course
       const results = users.map((user: any) => {
         console.log(user.quizProgress, "quizProgress for user:", user.name); // Debugging log
 
@@ -1120,6 +1124,9 @@ export const getUserQuizMarksAdmin = CatchAsyncErrror(
         success: true,
         message: "Quiz marks fetched successfully.",
         results,
+        // quiz,
+        userIds,
+        users
       });
     } catch (error: any) {
       return next(new ErrorHandler(error.message, 500));
