@@ -4,9 +4,9 @@ dotenv.config();
 import express, { NextFunction, Request, Response, ErrorRequestHandler } from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-import helmet from "helmet";
-import mongoSanitize from "express-mongo-sanitize";
-import { getRateLimiter } from './middleware/rateLimiter';
+// import helmet from "helmet";
+// import mongoSanitize from "express-mongo-sanitize";
+// import { getRateLimiter } from './middleware/rateLimiter';
 import { ErrorMiddlewares } from "./middleware/error";
 import { typeErrorHandler } from "./middleware/typeError";
 import userRouter from "./routes/user.routes";
@@ -20,23 +20,23 @@ import questionBankRouter from "./routes/questionBank.route";
 export const app = express();
 
 // Security headers with relaxed settings for development
-app.use(
-  helmet({
-    crossOriginResourcePolicy: { policy: "cross-origin" },
-    crossOriginOpenerPolicy: { policy: "unsafe-none" },
-  })
-);
+// app.use(
+//   helmet({
+//     crossOriginResourcePolicy: { policy: "cross-origin" },
+//     crossOriginOpenerPolicy: { policy: "unsafe-none" },
+//   })
+// );
 
-// Data sanitization against NoSQL query injection
-app.use(mongoSanitize());
+// // Data sanitization against NoSQL query injection
+// app.use(mongoSanitize());
 
-// Rate limiting
-// app.use('/api/', rateLimiter);
-app.use('/api/', getRateLimiter());
+// // Rate limiting
+// // app.use('/api/', rateLimiter);
+// app.use('/api/', getRateLimiter());
 
 // Body parser with size limits
 app.use(express.json({ limit: "50mb" }));
-app.use(express.urlencoded({ limit: "50mb", extended: true }));
+// app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
 // Cookie parser with security options
 app.use(cookieParser());
@@ -68,7 +68,7 @@ app.use(
 );
 
 // Pre-flight requests
-app.options("*", cors());
+// app.options("*", cors());
 
 //Routes
 app.use(
