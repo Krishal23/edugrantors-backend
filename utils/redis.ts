@@ -6,6 +6,8 @@ config();
 let redisClient: Redis | null = null;
 
 const createRedisClient = () => {
+    if (redisClient) return redisClient;
+
     if (process.env.NODE_ENV === 'development' && process.env.REDIS_DISABLED === 'true') {
         console.log('Redis disabled in development, using memory cache');
         return null;
@@ -15,28 +17,22 @@ const createRedisClient = () => {
         host: process.env.REDIS_HOST || 'localhost',
         port: parseInt(process.env.REDIS_PORT || '6379'),
         password: process.env.REDIS_PASSWORD,
-        retryStrategy: (times: number) => {
-            const delay = Math.min(Math.exp(times) * 100, 20000);
-            console.log(`Retrying Redis connection in ${delay}ms... (attempt ${times})`);
-            return delay;
-        },
+        retryStrategy: (times: number) => Math.min(Math.exp(times) * 100, 20000),
         maxRetriesPerRequest: 5,
         enableOfflineQueue: true,
         connectTimeout: 10000,
-
-        reconnectOnError: (err) => {
-            const targetError = 'READONLY';
-            return err.message.includes(targetError);
-        },
-        lazyConnect: false 
+        reconnectOnError: (err) => err.message.includes('READONLY'),
+        lazyConnect: false,
     });
 
+    
     client.on('error', (err) => {
         console.error('Redis Client Error:', err);
     });
 
     client.on('connect', () => {
-        console.log('Redis Client Connected');
+        const { host, port } = client.options;
+        console.log(`✅ Redis Client Connected to ${host}:${port}`);
     });
 
     client.on('ready', () => {
@@ -65,7 +61,6 @@ const getCache = async () => {
 
     if (redisClient) {
         try {
-            // Test connection with ping
             await redisClient.ping();
         } catch (error) {
             console.error('Failed to establish Redis connection:', error);
