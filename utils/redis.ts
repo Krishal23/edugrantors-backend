@@ -18,7 +18,7 @@ const createRedisClient = () => {
         port: parseInt(process.env.REDIS_PORT || '6379'),
         password: process.env.REDIS_PASSWORD,
         retryStrategy: (times: number) => Math.min(Math.exp(times) * 100, 20000),
-        maxRetriesPerRequest: 5,
+        maxRetriesPerRequest: null,
         enableOfflineQueue: true,
         connectTimeout: 10000,
         reconnectOnError: (err) => err.message.includes('READONLY'),

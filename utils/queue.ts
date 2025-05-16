@@ -1,11 +1,12 @@
 import Queue from 'bull';
 
 // Queue configuration
+
 const redisConfig = {
     host: process.env.REDIS_HOST || 'localhost',
     port: parseInt(process.env.REDIS_PORT || '6379'),
     password: process.env.REDIS_PASSWORD,
-    maxRetriesPerRequest: 5,
+    // maxRetriesPerRequest: 5,
     enableReadyCheck: false,
     retryStrategy: (times: number) => {
         const delay = Math.min(Math.exp(times) * 100, 20000);
