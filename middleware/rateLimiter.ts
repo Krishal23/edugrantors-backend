@@ -6,7 +6,7 @@ config();
 
 // Define environment-specific rate limit configurations
 const getRateLimitConfig = () => {
-    const env = process.env.NODE_ENV || 'development';
+    const env = process.env.NODE_ENV;
     
     const configs:any = {
         development: {
@@ -38,7 +38,7 @@ const getRateLimitConfig = () => {
         }
     };
     
-    return configs[env] || configs.development;
+    return configs[env as keyof typeof configs] || configs.development;
 };
 
 // Initialize rate limiter with fallback
@@ -46,10 +46,10 @@ let rateLimiter: any;
 
 const createRateLimiter = async () => {
     const config = getRateLimitConfig();
-    
-    // Use in-memory store for development or when Redis is disabled
-    if (process.env.NODE_ENV === 'development' || process.env.REDIS_DISABLED === 'true') {
-        console.log('Using memory store for rate limiting');
+
+    // Use in-memory store if REDIS_DISABLED is set to 'true' in any environment
+    if (process.env.REDIS_DISABLED === 'true') {
+        console.log('REDIS_DISABLED is true: Using memory store for rate limiting');
         return rateLimit(config);
     }
 
