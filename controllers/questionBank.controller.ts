@@ -12,7 +12,7 @@ export const uploadQuestion = CatchAsyncErrror(async (req: Request, res: Respons
         const data = req.body;
         // console.log(data)
 
-        
+
         if (!data.courseId) {
             return next(new ErrorHandler("courseId is required.", 400));
         }
@@ -51,7 +51,6 @@ export const uploadQuestion = CatchAsyncErrror(async (req: Request, res: Respons
             }
         }
         const question = await QuestionBank.create(data);
-        // console.log(question)
 
         res.status(201).json({
             success: true,
@@ -65,26 +64,58 @@ export const uploadQuestion = CatchAsyncErrror(async (req: Request, res: Respons
         return next(new ErrorHandler(error.message, 500));
     }
 });
-
 export const editQuestion = CatchAsyncErrror(async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const { questionId, ...data } = req.body;  // Destructure to get questionId and data
+        const { questionId, ...data } = req.body;
         const questionData = await QuestionBank.findById(questionId);
+
         if (!questionData) {
             return next(new ErrorHandler("Question not found", 404));
         }
 
-        // Validate updates for SCQ or MCQ
-        if (data.type === "SCQ" || data.type === "MCQ") {
-            if (data.options && !Array.isArray(data.options)) {
-                return next(new ErrorHandler("Options must be an array for SCQ and MCQ types.", 400));
+        if ((data.type === "SCQ" || data.type === "MCQ") && data.options && !Array.isArray(data.options)) {
+            return next(new ErrorHandler("Options must be an array for SCQ and MCQ types.", 400));
+        }
+
+        // === IMAGE upload ===
+        if (data.image && typeof data.image === "string" && data.image.startsWith("data:image")) {
+            console.log("Uploading new question image to Cloudinary...");
+
+            if (questionData.image?.public_id) {
+                await cloudinary.v2.uploader.destroy(questionData.image.public_id);
             }
+
+            const myCloud = await cloudinary.v2.uploader.upload(data.image, {
+                folder: "questions",
+            });
+
+            data.image = {
+                public_id: myCloud.public_id,
+                url: myCloud.secure_url,
+            };
+        }
+
+        if (data.imageExplain && typeof data.imageExplain === "string" && data.imageExplain.startsWith("data:image")) {
+            console.log("Uploading new explanation image to Cloudinary...");
+
+            if (questionData.imageExplain?.public_id) {
+                await cloudinary.v2.uploader.destroy(questionData.imageExplain.public_id);
+            }
+
+            const myCloud = await cloudinary.v2.uploader.upload(data.imageExplain, {
+                folder: "questionsExplanation",
+            });
+
+            data.imageExplain = {
+                public_id: myCloud.public_id,
+                url: myCloud.secure_url,
+            };
         }
 
         const updatedQuestion = await QuestionBank.findByIdAndUpdate(
             questionId,
-            { $set: data },
-            { new: true },
+            data,
+            { new: true }
         );
 
         if (!updatedQuestion) {
@@ -101,6 +132,8 @@ export const editQuestion = CatchAsyncErrror(async (req: Request, res: Response,
     }
 });
 
+
+
 // export const makePublic = CatchAsyncErrror(async (req: Request, res: Response, next: NextFunction) => {
 //     try {
 //         const { questionId, public} = req.body;  // Destructure to get questionId and data
@@ -109,7 +142,7 @@ export const editQuestion = CatchAsyncErrror(async (req: Request, res: Response,
 //             return next(new ErrorHandler("Question not found", 404));
 //         }
 
-       
+
 //         res.status(200).json({
 //             success: true,
 //             message: "Question updated successfully.",
