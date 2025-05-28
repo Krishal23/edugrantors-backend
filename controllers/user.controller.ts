@@ -556,7 +556,7 @@ export const updatePassword = CatchAsyncErrror(
       delete userToCache.password; // Remove sensitive information
 
       // Update the user data in Redis
-      await redis.set(req.user?._id as string, JSON.stringify(userToCache));
+      // await redis.set(req.user?._id as string, JSON.stringify(userToCache));
 
       // Send success response
       res.status(200).json({
@@ -616,13 +616,11 @@ export const changeForgotPassword = CatchAsyncErrror(
       }
 
       console.log("mail send successfully");
-      // Send success response
       res.status(200).json({
         success: true,
         message: "Password updated susfccessfully",
       });
     } catch (error: any) {
-      // Catch any unexpected error and pass it to the error handler middleware
       return next(new ErrorHandler(error.message, 400));
     }
   }
