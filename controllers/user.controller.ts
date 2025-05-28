@@ -594,7 +594,7 @@ export const changeForgotPassword = CatchAsyncErrror(
       delete userToCache.password; // Remove sensitive information
 
       // Update the user data in Redis
-      await redis.set(req.user?._id as string, JSON.stringify(userToCache));
+      // await redis.set(req.user?._id as string, JSON.stringify(userToCache));
       const data = {
         user: {
           name: user.name,
