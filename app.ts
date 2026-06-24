@@ -49,6 +49,7 @@ app.use(
       "https://edugrantors.vercel.app",
       "https://edugrantors-frontend.vercel.app",
       "https://www.edugrantors.in",
+      "https://edugrantors-frontend-nine.vercel.app"
     ],
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
