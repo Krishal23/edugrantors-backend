@@ -6,13 +6,14 @@ dotenv.config();  // Load environment variables from .env file
 // Function to create Redis client
 const createRedisClient = () => {
     const redisUrl = process.env.REDIS_URL;
-    
+
     if (!redisUrl) {
         throw new Error('Redis Connection Failed: REDIS_URL is not defined in environment variables.');
     }
 
     return redisUrl;  // Return the Redis URL if it's available in environment variables
 };
+const isSecure = process.env.REDIS_URL?.startsWith('rediss://');
 
 // Create Redis instance
 export const redis = new Redis(createRedisClient(), {
@@ -20,6 +21,7 @@ export const redis = new Redis(createRedisClient(), {
     maxRetriesPerRequest: 50,
     retryStrategy: (times) => Math.min(times * 100, 2000),  // Exponential backoff for retries
     keepAlive: 10000,  // Keep the connection alive for 10 seconds
+    tls: isSecure ? { rejectUnauthorized: false } : undefined,
 });
 
 // Log when Redis is connected successfully

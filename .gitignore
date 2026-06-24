@@ -14,6 +14,7 @@ Thumbs.db
 
 # Environment files
 .env
+.env.example
 .env.local
 .env.development.local
 .env.development
@@ -39,3 +40,6 @@ coverage/
 
 # Miscellaneous
 *.tgz
+.env.development
+.env.development
+.env.development
